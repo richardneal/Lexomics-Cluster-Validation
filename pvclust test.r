@@ -9,7 +9,7 @@ library(pvclust)
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
                       metric = "euclidean" , method = "average" ,
                       output.type = "pdf", output.file = "" , main = "",
-                      input.transposed = TRUE )
+                      input.transposed = TRUE, nboot = 100)
 {
         ## List of possible distance metrics
         ## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -58,14 +58,14 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
     }
     # else 0
 
-    dist.tTable <- dist(relFreq , method = metric)
+    #dist.tTable <- dist(relFreq , method = metric)
     
 #these two lines create the example dataset used in the examples for pvclust
 #library(MASS)
 #data(Boston)
 
 #hCluster <- hclust(dist.tTable, method = method)
-boston.pv <- pvclust(relFreq, nboot=100)
+boston.pv <- pvclust(relFreq, nboot=nboot, method.dist="euclidian")
 
 ## plot dendrogram with p-values
 plot(boston.pv)
@@ -89,4 +89,4 @@ boston.pp <- pvpick(boston.pv)
 boston.pp
 }
 
-myCluster("merge_transpose_GoldheartTest.tsv", input.transposed = FALSE)
+myCluster("merge_transpose_GoldheartTest.tsv", input.transposed = FALSE , nboot=1000)
