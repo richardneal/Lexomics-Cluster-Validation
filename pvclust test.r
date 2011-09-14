@@ -7,86 +7,80 @@ library(pvclust)
 # so that first textlabs has first chunksize number of chunks
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
-                      metric = "euclidean" , method = "average" ,
-                      output.type = "pdf", output.file = "" , main = "",
-                      input.transposed = TRUE, nboot = 100)
+					metric = "euclidean" , method = "average" , main = "",
+					input.transposed = FALSE, nboot = 100)
 {
-        ## List of possible distance metrics
-        ## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
-        ## "binary", "minkowski")
+	## List of possible distance metrics
+	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
+	## "binary", "minkowski")
 
-        ## List of possible cluster-distance methods
-        ## METHODS <- c("ward", "single", "complete", "average", "mcquitty",
-        ## "median", "centroid")
+	## List of possible cluster-distance methods
+	## METHODS <- c("ward", "single", "complete", "average", "mcquitty",
+	## "median", "centroid")
+	
+	## List if possible output.type for writing to file
+	## OUTPUT.TYPE <- c( "pdf", "svg", "phyloxml" )
 
-        ## List if possible output.type for writing to file
-        ## OUTPUT.TYPE <- c( "pdf", "svg", "phyloxml" )
+	## If want to dump to stdout, do not provide output.file
 
-        ## If want to dump to stdout, do not provide output.file
+	## If the input has text names on top, set input.transposed <- FALSE
 
-        ## If the input has text names on top, set input.transposed <- FALSE
+	##
 
-        ##
+	library(stats)
+	#change this for the text you'd like to input
+	input.data <- read.table(as.character(input.file), header=T,
+		comment.char="", row.names=1, sep="\t", quote="")
 
-    library(stats)
-    #change this for the text you'd like to input
-    input.data <- read.table(as.character(input.file), header=T,
-        comment.char="", row.names=1, sep="\t", quote="")
+	#tTable <- ifelse( input.transposed, input.data, t( input.data ) )
+	if ( input.transposed )
+		tTable <- input.data
+	else 
+		tTable <- t( input.data )
+	
+	rowSums <- apply(tTable, 1, sum)
+	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
+	relFreq <- tTable/denoms
 
-    #tTable <- ifelse( input.transposed, input.data, t( input.data ) )
-    if ( input.transposed )
-        tTable <- input.data
-    else 
-        tTable <- t( input.data )
-    
-    rowSums <- apply(tTable, 1, sum)
-    denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
-    relFreq <- tTable/denoms
+	if( !is.null(textlabs) && !is.null(chunksize)) {
+		if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
+		else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
+				L <- length(chunksize)
+				temp <- NULL
+				for(i in 1:L) {
+					for(k in 1:chunksize[i]){
+						temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
+			}
+				}
+		row.names(relFreq) <- temp
+	}
+	}
+	# else 0
 
-    if( !is.null(textlabs) && !is.null(chunksize)) {
-        if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
-        else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
-                 L <- length(chunksize)
-                 temp <- NULL
-                 for(i in 1:L) {
-                     for(k in 1:chunksize[i]){
-                         temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
-			   }
-                 }
-        row.names(relFreq) <- temp
-	   }
-    }
-    # else 0
+	#dist.tTable <- dist(relFreq , method = metric)
+	
+	pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=method, method.dist=metric)
 
-    #dist.tTable <- dist(relFreq , method = metric)
-    
-#these two lines create the example dataset used in the examples for pvclust
-#library(MASS)
-#data(Boston)
+	## plot dendrogram with p-values
+	plot(pCluster)
 
-#hCluster <- hclust(dist.tTable, method = method)
-boston.pv <- pvclust(relFreq, nboot=nboot, method.dist="euclidian")
+	ask.bak <- par()$ask
+	par(ask=TRUE)
 
-## plot dendrogram with p-values
-plot(boston.pv)
+	## highlight clusters with high au p-values
+	pvrect(pCluster)
 
-ask.bak <- par()$ask
-par(ask=TRUE)
+	## print the result of multiscale bootstrap resampling
+	print(pCluster, digits=3)
 
-## highlight clusters with high au p-values
-pvrect(boston.pv)
+	## plot diagnostic for curve fitting
+	msplot(pCluster, edges=c(2,4,6,7))
 
-## print the result of multiscale bootstrap resampling
-print(boston.pv, digits=3)
+	par(ask=ask.bak)
 
-## plot diagnostic for curve fitting
-msplot(boston.pv, edges=c(2,4,6,7))
-
-par(ask=ask.bak)
-
-## Print clusters with high p-values
-boston.pp <- pvpick(boston.pv)
-boston.pp
+	## Print clusters with high p-values
+	pCluster.pp <- pvpick(pCluster)
+	pCluster.pp
 }
 
-myCluster("merge_transpose_GoldheartTest.tsv", input.transposed = FALSE , nboot=1000)
+myCluster("merge_transpose_GoldheartTest.tsv", nboot=1000)
