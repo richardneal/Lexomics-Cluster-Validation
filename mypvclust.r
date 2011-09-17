@@ -1,4 +1,5 @@
-library(pvclust)
+source ( 'pvclust.R' )
+source ( 'pvclust-internal.R' )
 
 # Idea for text labeling input
 # textlabs is a list of character strings for the text part of the the label
@@ -7,7 +8,7 @@ library(pvclust)
 # so that first textlabs has first chunksize number of chunks
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
-					metric = "euclidean" , method = "average" , main = "",
+					distMetric = "euclidean" , clustMethod = "average" , main = "",
 					input.transposed = FALSE, nboot = 100)
 {
 	## List of possible distance metrics
@@ -56,10 +57,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 	}
 	# else 0
-
-	#dist.tTable <- dist(relFreq , method = metric)
 	
-	pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=method, method.dist=metric)
+	pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
 
 	## plot dendrogram with p-values
 	plot(pCluster)
@@ -74,7 +73,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	print(pCluster, digits=3)
 
 	## plot diagnostic for curve fitting
-	msplot(pCluster, edges=c(2,4,6,7))
+	msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
+								       #this line will not wok.
 
 	par(ask=ask.bak)
 
@@ -83,4 +83,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	pCluster.pp
 }
 
-myCluster("merge_transpose_GoldheartTest.tsv", nboot=1000)
+myCluster("merge_transpose_fedpapersFull.tsv", nboot=1000)
