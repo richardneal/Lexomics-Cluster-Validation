@@ -1,6 +1,8 @@
 source ( 'pvclust.R' )
 source ( 'pvclust-internal.R' )
 
+#library(pvclust)
+
 # Idea for text labeling input
 # textlabs is a list of character strings for the text part of the the label
 # chunksize is a list of numeric for the number of chunks in each text
@@ -9,11 +11,11 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = FALSE, nboot = 100)
+					input.transposed = TRUE, nboot = 100)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
-	## "binary", "minkowski")
+	## "binary", "minkowski", "correlation", "uncentered", "abscor")
 
 	## List of possible cluster-distance methods
 	## METHODS <- c("ward", "single", "complete", "average", "mcquitty",
@@ -42,6 +44,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	rowSums <- apply(tTable, 1, sum)
 	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
 	relFreq <- tTable/denoms
+	
+	relFreq <- t(relFreq)
 
 	if( !is.null(textlabs) && !is.null(chunksize)) {
 		if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
@@ -57,12 +61,24 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 	}
 	# else 0
-	
-	pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
+
+	library(snow)
+	cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
+	clusterSetupRNG(cl)
+	clusterEvalQ(cl, source( 'pvclust.R' ))
+	clusterEvalQ(cl, source( 'pvclust-internal.R' ))
+	clusterEvalQ(cl, library(snow))
+	clusterEvalQ(cl, library(stats))
+	## parallel version of pvclust
+	pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
 
 	## plot dendrogram with p-values
+	# dev.control()
+	pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
 	plot(pCluster)
+	dev.off()
 
+	
 	ask.bak <- par()$ask
 	par(ask=TRUE)
 
@@ -73,14 +89,14 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	print(pCluster, digits=3)
 
 	## plot diagnostic for curve fitting
-	msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
+	#msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
 								       #this line will not wok.
 
-	par(ask=ask.bak)
+	#par(ask=ask.bak)
 
 	## Print clusters with high p-values
-	pCluster.pp <- pvpick(pCluster)
-	pCluster.pp
+	#pCluster.pp <- pvpick(pCluster)
+	#pCluster.pp
 }
 
-myCluster("merge_transpose_fedpapersFull.tsv", nboot=1000)
+myCluster("DAZ_totalCounts.tsv", nboot=10, distMetric = "euclidean")

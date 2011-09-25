@@ -45,6 +45,7 @@ plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
   if(is.null(sub))
     sub=paste("Cluster method: ", x$hclust$method, sep="")
   
+  
   if(is.null(xlab))
     xlab=paste("Distance: ", x$hclust$dist.method)
       
@@ -280,7 +281,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
     distance <- dist.pvclust(data, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
-    
+	
     # multiscale bootstrap
     size <- floor(n*r)
     rl <- length(size)
