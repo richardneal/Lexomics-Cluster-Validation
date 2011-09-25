@@ -74,9 +74,9 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	## plot dendrogram with p-values
 	# dev.control()
-	pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
+	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
 	plot(pCluster)
-	dev.off()
+	#dev.off()
 
 	
 	ask.bak <- par()$ask
