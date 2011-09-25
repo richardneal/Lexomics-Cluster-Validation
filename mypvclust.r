@@ -78,13 +78,12 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	plot(pCluster)
 	#dev.off()
 
-	
 	ask.bak <- par()$ask
 	par(ask=TRUE)
 
 	## highlight clusters with high au p-values
 	pvrect(pCluster)
-
+	
 	## print the result of multiscale bootstrap resampling
 	print(pCluster, digits=3)
 
