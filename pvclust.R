@@ -51,7 +51,7 @@ plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
     xlab=paste("Distance: ", x$hclust$dist.method)
       
   plot(x$hclust, main=main, sub=sub, xlab=xlab, col=col, cex=cex,
-       font=font, lty=lty, lwd=lwd, ...)
+       font=font, lty=lty, lwd=lwd, hang = -1, ...)
 
   if(print.pv)
     text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num)

@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100)
+					input.transposed = FALSE, nboot = 100)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -62,6 +62,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 	# else 0
 
+	Sys.time()->start;
+	
 	library(snow)
 	cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
 	clusterSetupRNG(cl)
@@ -96,6 +98,10 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	## Print clusters with high p-values
 	#pCluster.pp <- pvpick(pCluster)
 	#pCluster.pp
+	
+	print(Sys.time()-start);
+	
+	stopCluster(cl)
 }
 
-myCluster("DAZ_totalCounts.tsv", nboot=10, distMetric = "euclidean")
+myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean")
