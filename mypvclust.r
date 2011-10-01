@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = FALSE, nboot = 100)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -64,16 +64,29 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	Sys.time()->start;
 	
-	library(snow)
-	cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
-	clusterSetupRNG(cl)
-	clusterEvalQ(cl, source( 'pvclust.R' ))
-	clusterEvalQ(cl, source( 'pvclust-internal.R' ))
-	clusterEvalQ(cl, library(snow))
-	clusterEvalQ(cl, library(stats))
-	## parallel version of pvclust
-	pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
+	if(!runParallel)
+	{
+		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
+	}
 
+	else
+	{
+		library(snowfall)
+		sfInit(parallel=TRUE, cpus=3,type='SOCK')
+		cl <- sfGetCluster()
+		#cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
+		clusterEvalQ(cl, source( 'pvclust.R' ))
+		clusterEvalQ(cl, source( 'pvclust-internal.R' ))
+		#clusterEvalQ(cl, library(snow))
+		#clusterEvalQ(cl, library(stats))
+		## parallel version of pvclust
+		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
+	}
+	
+
+
+
+	
 	## plot dendrogram with p-values
 	# dev.control()
 	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
@@ -101,7 +114,10 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	print(Sys.time()-start);
 	
-	stopCluster(cl)
+	if(runParallel)
+	{
+		sfStop()
+	}
 }
 
-myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean")
+myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = TRUE)

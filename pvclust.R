@@ -39,8 +39,16 @@ plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
                          main=NULL, sub=NULL, xlab=NULL, height=800, width=1000,...)
 {
-  windows(record=TRUE, width=width, height=height)
-
+  if(.Platform$OS.type == "windows")
+  {
+	windows(record=TRUE, width=width, height=height)
+  }
+  
+  else if(.Platform$OS.type == "linux")
+  {
+	X11(width=width, height=height)
+  }
+  
   if(is.null(main))
     main="Cluster dendrogram with AU/BP values (%)"
   
