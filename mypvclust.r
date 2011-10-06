@@ -44,6 +44,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	rowSums <- apply(tTable, 1, sum)
 	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
 	relFreq <- tTable/denoms
+    distTable <- dist(relFreq, method = distMetric)
 	
 	relFreq <- t(relFreq)
 
@@ -66,7 +67,17 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
+		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, store=TRUE)
+		listH <- pCluster$store
+		for(i in listH)
+		{
+			for(j in i)
+			{
+				cop <- cophenetic(j)
+				print(cor(cop, distTable))
+			}
+		}
+		#print(class(pCluster))
 	}
 
 	else
@@ -90,17 +101,17 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	## plot dendrogram with p-values
 	# dev.control()
 	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
-	plot(pCluster)
+	#plot(pCluster)
 	#dev.off()
 
-	ask.bak <- par()$ask
-	par(ask=TRUE)
+	#ask.bak <- par()$ask
+	#par(ask=TRUE)
 
 	## highlight clusters with high au p-values
-	pvrect(pCluster)
+	#pvrect(pCluster)
 	
 	## print the result of multiscale bootstrap resampling
-	print(pCluster, digits=3)
+	#print(pCluster, digits=3)
 
 	## plot diagnostic for curve fitting
 	#msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
@@ -120,4 +131,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("fedpapers.tsv", nboot=100000, distMetric = "euclidean", runParallel = FALSE)
+myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE)
