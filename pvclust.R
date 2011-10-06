@@ -37,30 +37,30 @@ pvclust <- function(data, method.hclust="average",
 plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
-                         main=NULL, sub=NULL, xlab=NULL, height=800, width=1000,...)
+                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800,...)
 {
   if(.Platform$OS.type == "windows")
   {
 	windows(record=TRUE, width=width, height=height)
   }
   
-  else if(.Platform$OS.type == "linux")
+  else if(.Platform$OS.type == "unix")
   {
-	X11(width=width, height=height)
+	#X11(width=width, height=height, type="Xlib")
+	X11(type="Xlib")
   }
   
   if(is.null(main))
     main="Cluster dendrogram with AU/BP values (%)"
-  
+
   if(is.null(sub))
     sub=paste("Cluster method: ", x$hclust$method, sep="")
-  
+ 
   if(is.null(xlab))
-    xlab=paste("Distance: ", x$hclust$dist.method)
-      
+    xlab=paste("Distance: ", x$hclust$dist.method)  
+
   plot(x$hclust, main=main, sub=sub, xlab=xlab, col=col, cex=cex,
        font=font, lty=lty, lwd=lwd, hang = -1, ...)
-
   if(print.pv)
     text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num)
 }

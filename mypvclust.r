@@ -75,8 +75,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		sfInit(parallel=TRUE, cpus=3,type='SOCK')
 		cl <- sfGetCluster()
 		#cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
-		clusterEvalQ(cl, source( 'pvclust.R' ))
-		clusterEvalQ(cl, source( 'pvclust-internal.R' ))
+		sfSource( 'pvclust.R' )
+		sfSource( 'pvclust-internal.R' )
 		#clusterEvalQ(cl, library(snow))
 		#clusterEvalQ(cl, library(stats))
 		## parallel version of pvclust
@@ -120,4 +120,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = TRUE)
+myCluster("fedpapers.tsv", nboot=100000, distMetric = "euclidean", runParallel = FALSE)
