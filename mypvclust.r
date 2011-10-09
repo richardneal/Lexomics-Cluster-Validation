@@ -44,8 +44,14 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	rowSums <- apply(tTable, 1, sum)
 	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
 	relFreq <- tTable/denoms
-    distTable <- dist(relFreq, method = distMetric)
-	
+
+	#find cophenetic corelation of orignal hclustering
+      distTable <- dist(relFreq, method = distMetric)
+	orignalClust <- hclust(distTable, method=clustMethod)     	
+	orginalCopDist <- cophenetic(orignalClust)
+	originalCor <- cor(orginalCopDist, distTable)
+
+      #transpose relFreq so it matches the format pvclust expects
 	relFreq <- t(relFreq)
 
 	if( !is.null(textlabs) && !is.null(chunksize)) {
@@ -65,25 +71,17 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	Sys.time()->start;
 	
+	copValues <- numeric(0)
+
 	if(!runParallel)
 	{
 		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, store=TRUE)
-		listH <- pCluster$store
-		for(i in listH)
-		{
-			for(j in i)
-			{
-				cop <- cophenetic(j)
-				print(cor(cop, distTable))
-			}
-		}
-		#print(class(pCluster))
 	}
 
 	else
 	{
 		library(snowfall)
-		sfInit(parallel=TRUE, cpus=3,type='SOCK')
+		sfInit(parallel=TRUE, cpus=2,type='SOCK')
 		cl <- sfGetCluster()
 		#cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
 		sfSource( 'pvclust.R' )
@@ -91,17 +89,30 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		#clusterEvalQ(cl, library(snow))
 		#clusterEvalQ(cl, library(stats))
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric)
+		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, store=TRUE)
 	}
 	
 
+	listH <- pCluster$store
+	for(i in listH)
+	{
+		for(j in i)
+		{
+			cop <- cophenetic(j)
+			copValues <- c(copValues, (cor(cop, distTable)))
+		}
+	}
 
+	#print(class(pCluster))
+	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
+	print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
+      print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
+      #print(paste("Average Cophenetic correlation", average(copValues)), sep=" ")	
 
-	
 	## plot dendrogram with p-values
 	# dev.control()
 	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
-	#plot(pCluster)
+	plot(pCluster)
 	#dev.off()
 
 	#ask.bak <- par()$ask
@@ -131,4 +142,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE)
+myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE)
