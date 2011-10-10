@@ -75,7 +75,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	if(!runParallel)
 	{
-		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, store=TRUE)
+		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
 	}
 
 	else
@@ -89,17 +89,16 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		#clusterEvalQ(cl, library(snow))
 		#clusterEvalQ(cl, library(stats))
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, store=TRUE)
+		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
 	}
 	
 
-	listH <- pCluster$store
+	listH <- pCluster$storeCop
 	for(i in listH)
 	{
 		for(j in i)
-		{
-			cop <- cophenetic(j)
-			copValues <- c(copValues, (cor(cop, distTable)))
+		{	
+			copValues <- c(copValues, j)
 		}
 	}
 
@@ -120,7 +119,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	## highlight clusters with high au p-values
 	#pvrect(pCluster)
-	
+
 	## print the result of multiscale bootstrap resampling
 	#print(pCluster, digits=3)
 

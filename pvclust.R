@@ -1,34 +1,42 @@
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE)
+                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE)
   {
+    copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
+
     # data: (n,p) matrix, n-samples, p-variables
     n <- nrow(data); p <- ncol(data)
 
     # hclust for original data
-    METHODS <- c("ward", "single", "complete", "average", "mcquitty", 
+    METHODS <- c("ward", "single", "complete", "average", "mcquitty",
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
     distance <- dist.pvclust(data, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
-    
+
+    #if finding the cophenetic correlations
+    if(storeCop)
+    {
+        copDistance <- cophenetic(data.hclust)
+    }
+
     # multiscale bootstrap
     size <- floor(n*r)
     rl <- length(size)
-    
+
     if(rl == 1) {
       if(r != 1.0)
         warning("Relative sample size r is set to 1.0. AU p-values are not calculated\n")
-      
+
       r <- list(1.0)
     }
     else
       r <- as.list(size/n)
-    
+
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
-                    method.hclust=method.hclust, store=store, weight=weight)
-    
+                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance)
+
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot)
     
     return(result)
@@ -260,16 +268,18 @@ pvpick <- function(x, alpha=0.95, pv="au", type="geq", max.only=TRUE)
 
 parPvclust <- function(cl, data, method.hclust="average",
                        method.dist="correlation", use.cor="pairwise.complete.obs",
-                       nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE,
+                       nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, storeCop=FALSE,
                        weight=FALSE,
                        init.rand=TRUE, seed=NULL)
   {
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
-    
+
     if((ncl <- length(cl)) < 2 || ncl > nboot) {
       warning("Too small value for nboot: non-parallel version is executed.")
       return(pvclust(data,method.hclust,method.dist,use.cor,nboot,r,store))
     }
+
+    copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
 
     if(init.rand) {
       if(is.null(seed))
@@ -291,6 +301,13 @@ parPvclust <- function(cl, data, method.hclust="average",
     distance <- dist.pvclust(data, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
+    #if finding the cophenetic correlations
+    if(storeCop)
+    {
+        copDistance <- cophenetic(data.hclust)
+    }
+
+
     # multiscale bootstrap
     size <- floor(n*r)
     rl <- length(size)
@@ -314,7 +331,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     mlist <- parLapply(cl, nbl, pvclust.node,
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
-                       store=store, weight=weight)
+                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance)
     cat("Done.\n")
     
     mboot <- mlist[[1]]
@@ -324,6 +341,7 @@ parPvclust <- function(cl, data, method.hclust="average",
         mboot[[j]]$edges.cnt <- mboot[[j]]$edges.cnt + mlist[[i]][[j]]$edges.cnt
         mboot[[j]]$nboot <- mboot[[j]]$nboot + mlist[[i]][[j]]$nboot
         mboot[[j]]$store <- c(mboot[[j]]$store, mlist[[i]][[j]]$store)
+        mboot[[j]]$storeCop <- c(mboot[[j]]$storeCop, mlist[[i]][[j]]$storeCop)
       }
     }
 

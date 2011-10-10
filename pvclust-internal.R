@@ -73,8 +73,8 @@ pvclust.node <- function(x, r,...)
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F)
-{ 
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance)
+{
   n     <- nrow(data)
   size  <- round(n*r, digits=0)
   if(size == 0)
@@ -84,13 +84,14 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
   pattern   <- hc2split(object.hclust)$pattern
   edges.cnt <- table(factor(pattern)) - table(factor(pattern))
   st <- list()
-  
+  stc <- list() #list storing cophenetic correlations
+
   # bootstrap start
   rp <- as.character(round(r,digits=2)); if(r == 1) rp <- paste(rp,".0",sep="")
   cat(paste("Bootstrap (r = ", rp, ")... ", sep=""))
   w0 <- rep(1,n) # equal weight
   na.flag <- 0
-  
+
   for(i in 1:nboot){
     if(weight && r>10) {  ## <- this part should be improved
       w1 <- as.vector(rmultinom(1,size,w0)) # resampled weight
@@ -110,6 +111,14 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 
     if(store)
       st[[i]] <- x.hclust
+
+
+    if(storeCop)  #if storing cophenetic corelations, find and store the correlation now
+    {
+        bootCop <- cophenetic(x.hclust)
+        stc[[i]] <- cor(copDistance, bootCop)
+    }
+
   }
   cat("Done.\n")
   # bootstrap done
@@ -118,7 +127,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	warning(paste("inappropriate distance matrices are omitted in computation: r = ", r), call.=FALSE)
 
   boot <- list(edges.cnt=edges.cnt, method.dist=method.dist, use.cor=use.cor,
-               method.hclust=method.hclust, nboot=nboot, size=size, r=r, store=st)
+               method.hclust=method.hclust, nboot=nboot, size=size, r=r, store=st, storeCop=stc)
   class(boot) <- "boot.hclust"
   
   return(boot)
@@ -131,6 +140,7 @@ pvclust.merge <- function(data, object.hclust, mboot){
   r     <- unlist(lapply(mboot,"[[","r"))
   nboot <- unlist(lapply(mboot,"[[","nboot"))
   store <- lapply(mboot,"[[", "store")
+  storeCop <-lapply(mboot,"[[", "storeCop")
   
   rl <- length(mboot)
   ne <- length(pattern)
@@ -168,7 +178,7 @@ pvclust.merge <- function(data, object.hclust, mboot){
   row.names(edges.pv) <- row.names(edges.cnt) <- 1:ne
 
   result <- list(hclust=object.hclust, edges=edges.pv, count=edges.cnt,
-                 msfit=ms.fitted, nboot=nboot, r=r, store=store)
+                 msfit=ms.fitted, nboot=nboot, r=r, store=store, storeCop=storeCop)
 
   class(result) <- "pvclust"
   return(result)
