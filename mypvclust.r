@@ -104,9 +104,12 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	#print(class(pCluster))
 	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
+	print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
 	print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
       print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
-      #print(paste("Average Cophenetic correlation", average(copValues)), sep=" ")	
+      print(paste("Mean Cophenetic correlation", mean(copValues)), sep=" ")
+      print(paste("Median Cophenetic correlation", median(copValues)), sep=" ")
+
 
 	## plot dendrogram with p-values
 	# dev.control()
@@ -141,4 +144,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE)
+myCluster("danile-azarius.txt", nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE)
