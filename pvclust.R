@@ -17,7 +17,7 @@ pvclust <- function(data, method.hclust="average",
     #if finding the cophenetic correlations
     if(storeCop)
     {
-        copDistance <- cophenetic(data.hclust)
+        copDistance <- distance
     }
 
     # multiscale bootstrap

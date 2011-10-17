@@ -81,7 +81,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	else
 	{
 		library(snowfall)
-		sfInit(parallel=TRUE, cpus=2,type='SOCK')
+		sfInit(parallel=TRUE, cpus=3,type='SOCK')
 		cl <- sfGetCluster()
 		#cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
 		sfSource( 'pvclust.R' )
@@ -144,4 +144,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("danile-azarius.txt", nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE)
+myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE)
