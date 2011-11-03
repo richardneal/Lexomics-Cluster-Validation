@@ -31,8 +31,9 @@ pvclust <- function(data, method.hclust="average",
       r <- list(1.0)
     }
     else
+	{
       r <- as.list(size/n)
-
+	}
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance)
@@ -350,28 +351,31 @@ parPvclust <- function(cl, data, method.hclust="average",
     return(result)
   }
 
+#bp = a list of all the bp values for a particular clade 
 msfit <- function(bp, r, nboot) {
 
   if(length(bp) != length(r))
     stop("bp and r should have the same length")
-
+	
   nboot <- rep(nboot, length=length(bp))
 
-  use <- bp > 0 & bp < 1
+  use <- bp > 0 & bp < 1 #find all bp with values between 0 and 1
 
   p <- se <- c(0,0); names(p) <- names(se) <- c("au", "bp")
   coef <- c(0,0); names(coef) <- c("v", "c")
 
   a <- list(p=p, se=se, coef=coef, df=0, rss=0, pchi=0); class(a) <- "msfit"
 
-  if(sum(use) < 2) {
+  if(sum(use) < 2) { #are there at least two valid bp values
     # if(mean(bp) < .5) a$p[] <- c(0, 0) else a$p[] <- c(1, 1)
     if(mean(bp) < .5) a$p[] <- c(0, bp[r==1.0]) else a$p[] <- c(1, bp[r==1.0])
     return(a)
   }
 
-  bp <- bp[use]; r <- r[use]; nboot <- nboot[use]
+  bp <- bp[use]; r <- r[use]; nboot <- nboot[use] #get only the bp that had values greater then 0 and less then 1
+  print(bp)
   zz <- -qnorm(bp)
+  #print(zz)
   vv <- ((1 - bp) * bp) / (dnorm(zz)^2 * nboot)
   a$use <- use; a$r <- r; a$zz <- zz
 
@@ -379,10 +383,15 @@ msfit <- function(bp, r, nboot) {
   fit <- lsfit(X, zz, 1/vv, intercept=FALSE)
   a$coef <- coef <- fit$coef
 
+  #print(coef)
+  
   h.au <- c(1, -1); h.bp <- c(1, 1)
   
-  z.au <- drop(h.au %*% coef); z.bp <- drop(h.bp %*% coef)
+  z.au <- drop(h.au %*% coef); z.bp <- drop(h.bp %*% coef) #%*% is matrix multiplication
   a$p["au"] <- pnorm(-z.au); a$p["bp"] <- pnorm(-z.bp)
+  #print(z.au)
+  #print(z.bp)
+  
   V <- solve(crossprod(X, X/vv))
   vz.au <- drop(h.au %*% V %*% h.au); vz.bp <- drop(h.bp %*% V %*% h.bp)
   a$se["au"] <- dnorm(z.au) * sqrt(vz.au); a$se["bp"] <- dnorm(z.bp) * sqrt(vz.bp)

@@ -46,7 +46,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	relFreq <- tTable/denoms
 
 	#find cophenetic corelation of orignal hclustering
-      distTable <- dist(relFreq, method = distMetric)
+    distTable <- dist(relFreq, method = distMetric)
 	orignalClust <- hclust(distTable, method=clustMethod)     	
 	orginalCopDist <- cophenetic(orignalClust)
 	originalCor <- cor(orginalCopDist, distTable)
@@ -144,4 +144,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE)
+myCluster("SimpleTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE)

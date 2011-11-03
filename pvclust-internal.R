@@ -150,11 +150,13 @@ pvclust.merge <- function(data, object.hclust, mboot){
   names(edges.cnt) <- paste("r", 1:rl, sep="")
 
   for(j in 1:rl) {
-    edges.cnt[,j] <- as.vector(mboot[[j]]$edges.cnt) 
-    edges.bp[,j]  <- edges.cnt[,j] / nboot[j]
+    edges.cnt[,j] <- as.vector(mboot[[j]]$edges.cnt) #holds the number of times each clade is formed for this particular r value
+	#print(edges.cnt[,j])
+    edges.bp[,j]  <- edges.cnt[,j] / nboot[j]  #holds the number of times each clade is formed divided by the total number of bootstraps for this particular r value
+	#print(edges.bp[,j])
   }
   
-  ms.fitted <- lapply(as.list(1:ne),
+  ms.fitted <- lapply(as.list(1:ne),									  #does the function one per clade
                       function(x, edges.bp, r, nboot){
                         msfit(as.vector(t(edges.bp[x,])), r, nboot)},
                       edges.bp, r, nboot)
@@ -163,7 +165,6 @@ pvclust.merge <- function(data, object.hclust, mboot){
   p    <- lapply(ms.fitted,"[[","p")
   se   <- lapply(ms.fitted,"[[","se")
   coef <- lapply(ms.fitted,"[[","coef")
-  
   au    <- unlist(lapply(p,"[[","au"))
   bp    <- unlist(lapply(p,"[[","bp"))
   se.au <- unlist(lapply(se,"[[","au"))
