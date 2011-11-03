@@ -1,6 +1,6 @@
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE)
+                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE)
   {
     copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
 
@@ -36,7 +36,7 @@ pvclust <- function(data, method.hclust="average",
 	}
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
-                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance)
+                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize)
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot)
     
@@ -270,7 +270,7 @@ pvpick <- function(x, alpha=0.95, pv="au", type="geq", max.only=TRUE)
 parPvclust <- function(cl, data, method.hclust="average",
                        method.dist="correlation", use.cor="pairwise.complete.obs",
                        nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, storeCop=FALSE,
-                       weight=FALSE,
+                       weight=FALSE, normalize=TRUE,
                        init.rand=TRUE, seed=NULL)
   {
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
@@ -332,7 +332,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     mlist <- parLapply(cl, nbl, pvclust.node,
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
-                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance)
+                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize)
     cat("Done.\n")
     
     mboot <- mlist[[1]]
@@ -357,7 +357,7 @@ msfit <- function(bp, r, nboot) {
   if(length(bp) != length(r))
     stop("bp and r should have the same length")
 	
-  nboot <- rep(nboot, length=length(bp))
+  nboot <- rep(nboot, length=length(bp)) 
 
   use <- bp > 0 & bp < 1 #find all bp with values between 0 and 1
 
@@ -373,7 +373,7 @@ msfit <- function(bp, r, nboot) {
   }
 
   bp <- bp[use]; r <- r[use]; nboot <- nboot[use] #get only the bp that had values greater then 0 and less then 1
-  print(bp)
+  #print(bp)
   zz <- -qnorm(bp)
   #print(zz)
   vv <- ((1 - bp) * bp) / (dnorm(zz)^2 * nboot)

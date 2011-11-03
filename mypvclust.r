@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -45,6 +45,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
 	relFreq <- tTable/denoms
 
+	#print(relFreq)
+	
 	#find cophenetic corelation of orignal hclustering
     distTable <- dist(relFreq, method = distMetric)
 	orignalClust <- hclust(distTable, method=clustMethod)     	
@@ -81,7 +83,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	else
 	{
 		library(snowfall)
-		sfInit(parallel=TRUE, cpus=3,type='SOCK')
+		sfInit(parallel=TRUE, cpus=clusterNumber,type='SOCK')
 		cl <- sfGetCluster()
 		#cl <- makeCluster(c("localhost", "localhost", "localhost"), type = "SOCK", homogeneous = TRUE)
 		sfSource( 'pvclust.R' )
@@ -144,4 +146,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("SimpleTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE)
+myCluster("inputTest.tsv", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 3)

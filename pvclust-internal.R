@@ -73,8 +73,9 @@ pvclust.node <- function(x, r,...)
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F, storeCop, copDistance)
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize)
 {
+
   n     <- nrow(data)
   size  <- round(n*r, digits=0)
   if(size == 0)
@@ -95,10 +96,26 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
   for(i in 1:nboot){
     if(weight && r>10) {  ## <- this part should be improved
       w1 <- as.vector(rmultinom(1,size,w0)) # resampled weight
+	  if(normalize)
+	  {
+		print("Code for normalizing resampled weight is not in yet. Look at code for nonresampled weight in boot.hclust for example of how to implement")
+	  }
+	  
       suppressWarnings(distance <- distw.pvclust(data,w1,method=method.dist,use.cor=use.cor))
     } else {
-      smpl <- sample(1:n, size, replace=TRUE)
-      suppressWarnings(distance  <- dist.pvclust(data[smpl,],method=method.dist,use.cor=use.cor))
+      smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
+	  
+	  bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
+
+	  if(normalize)
+	  {
+	  #normalize the new data
+		  colSums <- apply(bootStrapData, 2, sum)
+		  denoms <- matrix(rep(colSums, dim(bootStrapData)[1]), byrow=T, ncol=dim(bootStrapData)[2])
+		  bootStrapData <- bootStrapData/denoms
+	  }
+	  
+      suppressWarnings(distance  <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor))
     }
     if(all(is.finite(distance))) { # check if distance is valid
       x.hclust  <- hclust(distance,method=method.hclust)
