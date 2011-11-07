@@ -65,10 +65,10 @@ hc2split <- function(x)
     return(split)
   }
 
-pvclust.node <- function(x, r,...)
+pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
   {
 #    require(pvclust)
-    mboot.node <- lapply(r, boot.hclust, nboot=x, ...)
+    mboot.node <- lapply(r, boot.hclust, nboot=x, ...) #do the bootstraping once for each r value
     return(mboot.node)
   }
 
@@ -76,15 +76,16 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
                         method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize)
 {
 
-  n     <- nrow(data)
-  size  <- round(n*r, digits=0)
+  n     <- nrow(data) #get the number of rows (each row contains a single word)
+  size  <- round(n*r, digits=0) #calculate the number of rows to resample
   if(size == 0)
     stop("invalid scale parameter(r)")
-  r <- size/n
+  r <- size/n #recalculate r to match exactly size/n instead of approxiametly 
 
-  pattern   <- hc2split(object.hclust)$pattern
-  edges.cnt <- table(factor(pattern)) - table(factor(pattern))
-  st <- list()
+  pattern   <- hc2split(object.hclust)$pattern #get the pattern (the contents of each clade) from the original hclust object
+  edges.cnt <- table(factor(pattern)) - table(factor(pattern)) #create a table that shows the number of times each clade is formed in the bootstraped clusters
+  st <- list() #list that will store the hclust objects creatd
+  st <- list() #list that will store the hclust objects create
   stc <- list() #list storing cophenetic correlations
 
   # bootstrap start
@@ -110,30 +111,30 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	  if(normalize)
 	  {
 	  #normalize the new data
-		  colSums <- apply(bootStrapData, 2, sum)
-		  denoms <- matrix(rep(colSums, dim(bootStrapData)[1]), byrow=T, ncol=dim(bootStrapData)[2])
+		  colSums <- apply(bootStrapData, 2, sum) #each example/observation/object is one column, so find the sums of the columns
+		  denoms <- matrix(rep(colSums, dim(bootStrapData)[1]), byrow=T, ncol=dim(bootStrapData)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
 		  bootStrapData <- bootStrapData/denoms
 	  }
 	  
-      suppressWarnings(distance  <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor))
+      suppressWarnings(distance  <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor)) #ceate the new distance matrix
     }
     if(all(is.finite(distance))) { # check if distance is valid
-      x.hclust  <- hclust(distance,method=method.hclust)
-      pattern.i <- hc2split(x.hclust)$pattern # split
-      edges.cnt <- edges.cnt + table(factor(pattern.i,  levels=pattern))
+      x.hclust  <- hclust(distance,method=method.hclust) #create the hclust object
+      pattern.i <- hc2split(x.hclust)$pattern # get the contents of the clades
+      edges.cnt <- edges.cnt + table(factor(pattern.i,  levels=pattern)) #add the clades identical to the clades in the original object to the count of the number of times those clades appeared
     } else {
       x.hclust <- NULL
 	  na.flag <- 1
     }
 
-    if(store)
+    if(store) #if storing the hclust objects
       st[[i]] <- x.hclust
 
 
     if(storeCop)  #if storing cophenetic corelations, find and store the correlation now
     {
-        bootCop <- cophenetic(x.hclust)
-        stc[[i]] <- cor(copDistance, bootCop)
+        bootCop <- cophenetic(x.hclust) #get the cophenetic distance matrix
+        stc[[i]] <- cor(copDistance, bootCop) #find the correlation between the cophenetic distance matrix and the distance matrix from the original data.
     }
 
   }
@@ -144,25 +145,27 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	warning(paste("inappropriate distance matrices are omitted in computation: r = ", r), call.=FALSE)
 
   boot <- list(edges.cnt=edges.cnt, method.dist=method.dist, use.cor=use.cor,
-               method.hclust=method.hclust, nboot=nboot, size=size, r=r, store=st, storeCop=stc)
+               method.hclust=method.hclust, nboot=nboot, size=size, r=r, store=st, storeCop=stc) #store all the data in a list
   class(boot) <- "boot.hclust"
   
-  return(boot)
+  return(boot) #return that list to the function call
 }
 
+#this function takes all the data computed and converts it into the final results
 pvclust.merge <- function(data, object.hclust, mboot){
   
-  pattern <- hc2split(object.hclust)$pattern
-  
+  pattern <- hc2split(object.hclust)$pattern #get the contents of the clades in the original hclust objects
+ 
+  #get the following data out of the list 
   r     <- unlist(lapply(mboot,"[[","r"))
   nboot <- unlist(lapply(mboot,"[[","nboot"))
   store <- lapply(mboot,"[[", "store")
   storeCop <-lapply(mboot,"[[", "storeCop")
   
-  rl <- length(mboot)
-  ne <- length(pattern)
+  rl <- length(mboot) #get the number of r values
+  ne <- length(pattern) #get the number of clades
   
-  edges.bp <- edges.cnt <- data.frame(matrix(rep(0,ne*rl),nrow=ne,ncol=rl))
+  edges.bp <- edges.cnt <- data.frame(matrix(rep(0,ne*rl),nrow=ne,ncol=rl)) #Creates two big table, with each row being a clade, and each column being a r value. A individual entry denotes either the number of times that clade occured or the bp value for that clade for a particular r value.
   row.names(edges.bp) <- pattern
   names(edges.cnt) <- paste("r", 1:rl, sep="")
 
@@ -173,14 +176,14 @@ pvclust.merge <- function(data, object.hclust, mboot){
 	#print(edges.bp[,j])
   }
   
-  ms.fitted <- lapply(as.list(1:ne),									  #does the function one per clade
+  ms.fitted <- lapply(as.list(1:ne),									  #does the function one per clade that computes bp and au values
                       function(x, edges.bp, r, nboot){
                         msfit(as.vector(t(edges.bp[x,])), r, nboot)},
                       edges.bp, r, nboot)
   class(ms.fitted) <- "mslist"
   
-  p    <- lapply(ms.fitted,"[[","p")
-  se   <- lapply(ms.fitted,"[[","se")
+  p    <- lapply(ms.fitted,"[[","p") #p is a list of objects one per clade that hold both the au and bp values of that clade
+  se   <- lapply(ms.fitted,"[[","se") #se holds a different set of bp and au values????
   coef <- lapply(ms.fitted,"[[","coef")
   au    <- unlist(lapply(p,"[[","au"))
   bp    <- unlist(lapply(p,"[[","bp"))
@@ -190,16 +193,18 @@ pvclust.merge <- function(data, object.hclust, mboot){
   cc    <- unlist(lapply(coef,"[[","c"))
   pchi  <- unlist(lapply(ms.fitted,"[[","pchi"))
   
+  #store all the data in a single table
   edges.pv <- data.frame(au=au, bp=bp, se.au=se.au, se.bp=se.bp,
                          v=v, c=cc, pchi=pchi)
 
-  row.names(edges.pv) <- row.names(edges.cnt) <- 1:ne
+  row.names(edges.pv) <- row.names(edges.cnt) <- 1:ne #names by default seem to just be numbers 1-n with n being number of clades
 
+  #combine all the data into a list
   result <- list(hclust=object.hclust, edges=edges.pv, count=edges.cnt,
                  msfit=ms.fitted, nboot=nboot, r=r, store=store, storeCop=storeCop)
 
   class(result) <- "pvclust"
-  return(result)
+  return(result) #return that list
 }
 
 dist.pvclust <- function(x, method="euclidean", use.cor="pairwise.complete.obs")

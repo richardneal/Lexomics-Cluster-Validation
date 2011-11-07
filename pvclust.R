@@ -21,8 +21,8 @@ pvclust <- function(data, method.hclust="average",
     }
 
     # multiscale bootstrap
-    size <- floor(n*r)
-    rl <- length(size)
+    size <- floor(n*r) #get the size of the samples for each stage of the multiscale bootstraping
+    rl <- length(size) #get the number of stages
 
     if(rl == 1) {
       if(r != 1.0)
@@ -32,15 +32,15 @@ pvclust <- function(data, method.hclust="average",
     }
     else
 	{
-      r <- as.list(size/n)
+      r <- as.list(size/n) #recalculate r so R matchs size/n exactly instead of approxiametly
 	}
-    mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
+    mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot, 
                     method.dist=method.dist, use.cor=use.cor,
-                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize)
+                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize) #do the actual bootstraping
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot)
     
-    return(result)
+    return(result) 
   }
 
 plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
@@ -74,6 +74,7 @@ plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
     text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num)
 }
 
+#this function handles the actual writing of the au and bp labels on the plot
 text.pvclust <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL, font=NULL, ...)
 {
   axes <- hc2axes(x$hclust)
@@ -156,7 +157,7 @@ pvrect <- function(x, alpha=0.95, pv="au", type="geq", max.only=TRUE, border=2, 
       }
   }
 
-msplot <- function(x, edges=NULL, ...)
+msplot <- function(x, edges=NULL, ...) 
   {
     if(is.null(edges)) edges <- 1:length(x$msfit)
     d   <- length(edges)
@@ -275,7 +276,7 @@ parPvclust <- function(cl, data, method.hclust="average",
   {
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
 
-    if((ncl <- length(cl)) < 2 || ncl > nboot) {
+    if((ncl <- length(cl)) < 2 || ncl > nboot) { #if nboot is less then the number of clusters
       warning("Too small value for nboot: non-parallel version is executed.")
       return(pvclust(data,method.hclust,method.dist,use.cor,nboot,r,store))
     }
@@ -322,22 +323,22 @@ parPvclust <- function(cl, data, method.hclust="average",
     else
       r <- as.list(size/n)
 
-    nbl <- as.list(rep(nboot %/% ncl,times=ncl))
+    nbl <- as.list(rep(nboot %/% ncl,times=ncl)) # %/% is integer division. Divide nboot up evenly across the processers in the cluster
     
-    if((rem <- nboot %% ncl) > 0)
-    nbl[1:rem] <- lapply(nbl[1:rem], "+", 1)
+    if((rem <- nboot %% ncl) > 0) #if there are some nboots remaining
+    nbl[1:rem] <- lapply(nbl[1:rem], "+", 1) #add 1 nboot to each cluster upto the number of remaining bootstraps
 
     cat("Multiscale bootstrap... ")
     
     mlist <- parLapply(cl, nbl, pvclust.node,
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
-                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize)
+                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize) #do the bootstraping
     cat("Done.\n")
     
     mboot <- mlist[[1]]
 
-    for(i in 2:ncl) {
+    for(i in 2:ncl) { #merge all the data into a single object
       for(j in 1:rl) {
         mboot[[j]]$edges.cnt <- mboot[[j]]$edges.cnt + mlist[[i]][[j]]$edges.cnt
         mboot[[j]]$nboot <- mboot[[j]]$nboot + mlist[[i]][[j]]$nboot

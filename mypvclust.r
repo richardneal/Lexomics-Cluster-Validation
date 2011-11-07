@@ -44,7 +44,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	rowSums <- apply(tTable, 1, sum)
 	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
 	relFreq <- tTable/denoms
-
+	
 	#print(relFreq)
 	
 	#find cophenetic corelation of orignal hclustering
@@ -91,7 +91,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		#clusterEvalQ(cl, library(snow))
 		#clusterEvalQ(cl, library(stats))
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
+		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
 	}
 	
 
@@ -146,4 +146,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("inputTest.tsv", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 3)
+myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 3)
