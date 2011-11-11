@@ -93,7 +93,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
   cat(paste("Bootstrap (r = ", rp, ")... ", sep=""))
   w0 <- rep(1,n) # equal weight
   na.flag <- 0
-
+  
   for(i in 1:nboot){
     if(weight && r>10) {  ## <- this part should be improved
       w1 <- as.vector(rmultinom(1,size,w0)) # resampled weight

@@ -278,19 +278,21 @@ parPvclust <- function(cl, data, method.hclust="average",
 
     if((ncl <- length(cl)) < 2 || ncl > nboot) { #if nboot is less then the number of clusters
       warning("Too small value for nboot: non-parallel version is executed.")
-      return(pvclust(data,method.hclust,method.dist,use.cor,nboot,r,store))
+      return(pvclust(data,method.hclust,method.dist,use.cor,nboot,r,store)) #add extra parameters
     }
 
     copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
 
+
     if(init.rand) {
-      if(is.null(seed))
-        seed <- 1:length(cl)
-      else if(length(seed) != length(cl))
+	#give all the processers a unique random seed
+      if(is.null(seed)) #if the user didn't supply seeds
+        seed <- 1:length(cl) 
+      else if(length(seed) != length(cl)) #if the user supplied seeds make sure there is exactly one seed per processor
         stop("seed and cl should have the same length.")
       
       # setting random seeds
-      parLapply(cl, as.list(seed), set.seed)
+      parLapply(cl, as.list(seed), set.seed) #give each processor in the cluster a seed equal to it's processer number or equal to the seed the user supplied
     }
 
     # data: (n,p) matrix, n-samples, p-variables
