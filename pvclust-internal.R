@@ -152,7 +152,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 }
 
 #this function takes all the data computed and converts it into the final results
-pvclust.merge <- function(data, object.hclust, mboot){
+pvclust.merge <- function(data, object.hclust, mboot, distance){
   
   pattern <- hc2split(object.hclust)$pattern #get the contents of the clades in the original hclust objects
  
@@ -201,7 +201,7 @@ pvclust.merge <- function(data, object.hclust, mboot){
 
   #combine all the data into a list
   result <- list(hclust=object.hclust, edges=edges.pv, count=edges.cnt,
-                 msfit=ms.fitted, nboot=nboot, r=r, store=store, storeCop=storeCop)
+                 msfit=ms.fitted, nboot=nboot, r=r, store=store, storeCop=storeCop, distance=distance)
 
   class(result) <- "pvclust"
   return(result) #return that list

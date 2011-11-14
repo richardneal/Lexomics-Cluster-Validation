@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK')
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', upperBound = .95, lowerBound = .05)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -27,8 +27,9 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#so the total number of new hclust objects generated is 10*nboot
 	
 	#runParallel sets whether the program does the bootstrapping on a single core or runs it in parallel. If runParallel is false the code is executed on a single processer and there are no special requirements for 
-	#being able to run the code. The  clusterNumber, and clusterType parameters will also be ignored. If runParallel is set to true, the snow and snowfall librarys must be installed and the clusterNumber,
-    #and clusterType parameters will be used
+	#being able to run the code. The clusterNumber, and clusterType parameters will also be ignored. If runParallel is set to true, the snow and snowfall librarys must be installed and the clusterNumber,
+    #and clusterType parameters will be used. Currently there is one other discrepency that needs to be fixed. When runParallel is false each run will produce a new set of results, and when runParallel is true, each run will
+	#produce the same set of results due to parpvclust giving each processor a fixed seed.
 	
 	#clusterType is the type of cluster to create. If set to 'SOCK' the cluster will use raw sockets, which due to security concerns will not work over a network with some computers. If set to MPI will use the MPI protocal
 	#which requries that the computer has a MPI implementation, installed, properly set up and running, as well as having the r package rmpi installed. PVM (Parallel Virtual Machine) and NWS(networkspaces) 
@@ -38,6 +39,9 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#can come from any machine mpi is set up to access. If clusterNumber is set to a value greater then the number of processers actually available the code will still run, but some processers will end up running multiple instances
 	#of the program which will increase the total run time.
 	
+	#upperBound and lowerBound define what portion of the cophenetic correlations to use. The program will sort all the correlations calculated from smallest to largest. lowerBound specifies what at what precentage to start
+	#holding on to the values. For instance if lowerBound = .05 the program will discard the smallest 5% of the correlations. Upperbound is the precentage at which to stop holding onto the values. For instance if upperBound = .95 the program
+	#will keep going until it's gone through 95% of the correlations and discard the last five percent. 
 	
 	library(stats)
 	#change this for the text you'd like to input
@@ -45,21 +49,15 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		comment.char="", row.names=1, sep="\t", quote="")
 
 	#tTable <- ifelse( input.transposed, input.data, t( input.data ) )
-	if ( input.transposed )
+	if ( input.transposed ) #if the input
 		tTable <- input.data
 	else 
 		tTable <- t( input.data )
-	
-	rowSums <- apply(tTable, 1, sum)
-	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2])
-	relFreq <- tTable/denoms
-	
-       
-	#find cophenetic corelation of orignal hclustering
-    distTable <- dist(relFreq, method = distMetric)
-	orignalClust <- hclust(distTable, method=clustMethod) #this can be taken out. get if from pvclust results     	
-	orginalCopDist <- cophenetic(orignalClust)
-	originalCor <- cor(orginalCopDist, distTable)
+		
+	#convort input into relative frequencies	
+	rowSums <- apply(tTable, 1, sum) #get sum of each row
+	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2]) #set up table to divide current table by 
+	relFreq <- tTable/denoms #divide each number by the sum of the row it's in to get it's frequncy
 
     #transpose relFreq so it matches the format pvclust expects
 	relFreq <- t(relFreq)
@@ -90,10 +88,16 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	else
 	{
-		#ADD ERROR CHECKING
+		#ADD MORE ERROR CHECKING
 		library(snowfall) #I will write more about next line missing ip argument
 		sfInit(parallel=TRUE, cpus=clusterNumber,type=clusterType) #This creates the cluster. If clusterType is SOCK all the processors will be taken from the current computer. If the type is MPI, the processors can be taken
-		                                                           #from any computer running an MPI implementation
+		                                                           #from any computer running an MPI implementation, and the MPI program will handle choosing what processors to use
+																   
+		if(!sfIsRunning())
+		{
+			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
+			pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)			
+		}
 		cl <- sfGetCluster()
 		sfSource( 'pvclust.R' )
 		sfSource( 'pvclust-internal.R' )
@@ -101,7 +105,11 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
 	}
 	
+	#find cophenetic correlation of orignal hclustering	
+	orginalCopDist <- cophenetic(pCluster$hclust) #get cophenetic distance matrix for original hclust object
+	originalCor <- cor(orginalCopDist, pCluster$distance) #get correlation with original distance matrix
 
+	#the cophenentic correlations are stored in a series of lists which are themselves stored in a list, so merge them all into one list
 	listH <- pCluster$storeCop
 	for(i in listH)
 	{
@@ -111,16 +119,11 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		}
 	}
 
-	#print(class(pCluster))
-	copValues <- sort(copValues)
+	copValues <- sort(copValues) #sort the list
 	copSize <- length(copValues)
+	copValues <- copValues[round(copSize * lowerBound):round(copSize * upperBound - 1)] #trim list according to the upper and lower bounds
 	
-	upperBound = .95
-	lowerBound = .05
-	
-	copValues <- copValues[(copSize * lowerBound):(copSize * upperBound)]
-	
-	print(copValues)
+	#print(copValues)
 	
 	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
 	print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
@@ -161,8 +164,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	if(runParallel)
 	{
-		sfStop()
+		sfStop() #end the cluster
 	}
 }
 
-myCluster("inputTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 3)
+myCluster("danile-azarius.txt", nboot=100, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2)

@@ -38,7 +38,7 @@ pvclust <- function(data, method.hclust="average",
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize) #do the actual bootstraping
 
-    result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot)
+    result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance)
     
     return(result) 
   }
@@ -349,7 +349,7 @@ parPvclust <- function(cl, data, method.hclust="average",
       }
     }
 
-    result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot)
+    result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot, distance=distance)
     
     return(result)
   }
