@@ -55,8 +55,10 @@ plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
   
   else if(.Platform$OS.type == "unix")
   {
-	#X11(width=width, height=height, type="Xlib")
-	X11(type="Xlib")
+	X11(width=floor(width/96), height=floor(height/96), type="Xlib") #X11 specifies window size in inches for some bizare reason
+									 #I'm not certain of the correct conversion factor but this is my best
+									 #guess 
+	#X11(type="Xlib")
   }
   
   if(is.null(main))

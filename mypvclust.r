@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', upperBound = .95, lowerBound = .05)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -39,11 +39,13 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#can come from any machine mpi is set up to access. If clusterNumber is set to a value greater then the number of processers actually available the code will still run, but some processers will end up running multiple instances
 	#of the program which will increase the total run time.
 	
-	#upperBound and lowerBound define what portion of the cophenetic correlations to use. The program will sort all the correlations calculated from smallest to largest. lowerBound specifies what at what precentage to start
-	#holding on to the values. For instance if lowerBound = .05 the program will discard the smallest 5% of the correlations. Upperbound is the precentage at which to stop holding onto the values. For instance if upperBound = .95 the program
-	#will keep going until it's gone through 95% of the correlations and discard the last five percent. 
-	
+	#confidence interval is the confidence interval for the cophenetic correlations given as a percent entered in decimal form. The program will give the output the cophenetic correlations at the lower and upper ends of the interval. 
+	#The lower bound can be computed as (100% - confidence interval) / 2 and the upper bound as (100% - lower bound). For example if the confidence interval is 95% the lowerbound will be 2.5% and the upper bound 97.5%
+
+
 	library(stats)
+	Sys.time()->startTotal; #holds start time of program so time to run entire program can be calculated
+	
 	#change this for the text you'd like to input
 	input.data <- read.table(as.character(input.file), header=T,
 		comment.char="", row.names=1, sep="\t", quote="")
@@ -77,10 +79,10 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 	# else 0
 
-	Sys.time()->start;
-	
 	copValues <- numeric(0)
 
+	Sys.time()->startSection; #start timing the bootstraping
+	
 	if(!runParallel)
 	{
 		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
@@ -105,6 +107,10 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
 	}
 	
+	print("Bootstrap runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+
 	#find cophenetic correlation of orignal hclustering	
 	orginalCopDist <- cophenetic(pCluster$hclust) #get cophenetic distance matrix for original hclust object
 	originalCor <- cor(orginalCopDist, pCluster$distance) #get correlation with original distance matrix
@@ -121,18 +127,31 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	copValues <- sort(copValues) #sort the list
 	copSize <- length(copValues)
-	copValues <- copValues[round(copSize * lowerBound):round(copSize * upperBound - 1)] #trim list according to the upper and lower bounds
+	
+	lowerBound = (1-confidenceInterval) / 2 #to get the lower bound subtract the confidence interval from 1 to get the precentage outside the interval and divide by 2 to get the precentage below the interval
+	upperBound = 1 - lowerBound #subtract the lowerbound from 100% to get upper end of ranger
+	
+	
+	#copValues <- copValues[round(copSize * lowerBound):round(copSize * upperBound - 1)] #trim list according to the upper and lower bounds
 	
 	#print(copValues)
 	
 	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
 	print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
 	print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
-    print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
-    print(paste("Mean Cophenetic correlation", mean(copValues)), sep=" ")
+    print(paste(lowerBound * 100, "% interval Copheneticcorrelation ", copValues[round(copSize * lowerBound)]), sep="")	
     print(paste("Median Cophenetic correlation", median(copValues)), sep=" ")
+	print(paste(upperBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * upperBound)]), sep="")	
+    print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
+	
+	print(paste("Mean Cophenetic correlation", mean(copValues)), sep=" ")
     print(paste("Standard Deviation Cophenetic correlation", sd(copValues)), sep=" ")
-     
+    
+	print("Cophenetic analysis runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+
+	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
 
 	## plot dendrogram with p-values
@@ -160,7 +179,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#pCluster.pp <- pvpick(pCluster)
 	#pCluster.pp
 	
-	print(Sys.time()-start);
+	print("Total runtime:")
+    print(Sys.time()-startTotal);
 	
 	if(runParallel)
 	{
@@ -168,4 +188,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("danile-azarius.txt", nboot=100, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2)
+myCluster("danile-azarius.txt", nboot=1000, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")

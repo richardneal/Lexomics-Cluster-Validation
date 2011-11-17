@@ -104,6 +104,15 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	  
       suppressWarnings(distance <- distw.pvclust(data,w1,method=method.dist,use.cor=use.cor))
     } else {
+      	  #for(i in 1:ncol(data)){
+                                                         #need actual counts
+		#wordlist <- rep(rownames(data),data[,i]) #gets test order by word (each word appears count times)
+         #       tmpindex <- sample(1:sum(data[,i], size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
+         #       table(wordlist[tempIndex]) #returns counts for new sample
+
+		#try resample by clades. Set a cutoff for what clades to use and then sum up counts of all words inside
+                #each clade. Resample each chunk in the clade using those total sums of the clade
+	  #}
       smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
 	  
 	  bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
