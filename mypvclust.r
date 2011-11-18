@@ -53,17 +53,22 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#tTable <- ifelse( input.transposed, input.data, t( input.data ) )
 	if ( input.transposed ) #if the input
 		tTable <- input.data
-	else 
+	else
 		tTable <- t( input.data )
-		
-	#convort input into relative frequencies	
-	rowSums <- apply(tTable, 1, sum) #get sum of each row
-	denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2]) #set up table to divide current table by 
-	relFreq <- tTable/denoms #divide each number by the sum of the row it's in to get it's frequncy
+
+	#convort input into relative frequencies
+	#rowSums <- apply(tTable, 1, sum) #get sum of each row
+	#denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2]) #set up table to divide current table by
+	#relFreq <- tTable/denoms #divide each number by the sum of the row it's in to get it's frequncy
 
     #transpose relFreq so it matches the format pvclust expects
-	relFreq <- t(relFreq)
-	
+	#relFreq <- t(relFreq)
+
+        #print(relFreq)
+
+    #transpose data so it matches format pvclust expects
+    tTable <- t(tTable)
+
 	if( !is.null(textlabs) && !is.null(chunksize)) {
 		if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
 		else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
@@ -85,7 +90,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
 	}
 
 	else
@@ -188,4 +193,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("danile-azarius.txt", nboot=1000, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")
+myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 3, clusterType = "SOCK")

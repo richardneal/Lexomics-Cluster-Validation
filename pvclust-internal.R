@@ -104,19 +104,39 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	  
       suppressWarnings(distance <- distw.pvclust(data,w1,method=method.dist,use.cor=use.cor))
     } else {
-      	  #for(i in 1:ncol(data)){
-                                                         #need actual counts
-		#wordlist <- rep(rownames(data),data[,i]) #gets test order by word (each word appears count times)
-         #       tmpindex <- sample(1:sum(data[,i], size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
-         #       table(wordlist[tempIndex]) #returns counts for new sample
-
+		bootStrapData <- matrix(data = 0, nrow = nrow(data), ncol = ncol(data), dimnames=list(rownames(data),colnames(data)))
+		#print(tcounts)
+		#row.names(tcounts) <- rownames(data)
+		#print(tcounts)
+		#names(tcounts) <- colnames(data)		
+		#print(tcounts)
+		for(i in 1:ncol(data)){
+                                                         
+		 wordlist <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times)
+		 size <- length(wordlist) * r
+         tmpindex <- sample(1:sum(data[,i]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
+         counts <- table(wordlist[tmpindex]) #returns counts for new sample
+		 
+		 #print(counts)
+		 
+		 for(j in 1:nrow(data))
+		 {
+			bootStrapData[j,i] = counts[row.names(bootStrapData)[j]]
+			if(is.na(bootStrapData[j,i])) #if there was no occurances of this word in new sample
+			{
+				bootStrapData[j,i] = 0
+			}
+			
+		 }
+		
 		#try resample by clades. Set a cutoff for what clades to use and then sum up counts of all words inside
                 #each clade. Resample each chunk in the clade using those total sums of the clade
-	  #}
-      smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
-	  
-	  bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
+	  }
 
+      #smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
+	  
+	  #bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
+      #print(bootStrapData)
 	  if(normalize)
 	  {
 	  #normalize the new data

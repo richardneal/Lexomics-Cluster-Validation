@@ -7,11 +7,18 @@ pvclust <- function(data, method.hclust="average",
     # data: (n,p) matrix, n-samples, p-variables
     n <- nrow(data); p <- ncol(data)
 
+    #normalize data before getting distance matrix
+    colSums <- apply(data, 2, sum) #each example/observation/object is one column, so find the sums of the columns
+    denoms <- matrix(rep(colSums, dim(data)[1]), byrow=T, ncol=dim(data)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
+    relFreq <- data/denoms
+
+    #print(relFreq)
+
     # hclust for original data
     METHODS <- c("ward", "single", "complete", "average", "mcquitty",
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
-    distance <- dist.pvclust(data, method=method.dist, use.cor=use.cor)
+    distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 
     #if finding the cophenetic correlations
@@ -34,7 +41,7 @@ pvclust <- function(data, method.hclust="average",
 	{
       r <- as.list(size/n) #recalculate r so R matchs size/n exactly instead of approxiametly
 	}
-    mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot, 
+    mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize) #do the actual bootstraping
 
