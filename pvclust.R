@@ -14,6 +14,14 @@ pvclust <- function(data, method.hclust="average",
 
     #print(relFreq)
 
+	wordlist <- list()
+	
+	for(i in 1:ncol(data))
+	{
+		wordlist[[i]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times)
+	}
+	
+	
     # hclust for original data
     METHODS <- c("ward", "single", "complete", "average", "mcquitty",
                  "median", "centroid")
@@ -43,7 +51,7 @@ pvclust <- function(data, method.hclust="average",
 	}
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
-                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize) #do the actual bootstraping
+                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=wordlist) #do the actual bootstraping
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance)
     
@@ -291,9 +299,8 @@ parPvclust <- function(cl, data, method.hclust="average",
     }
 
     copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
-
-
-    if(init.rand) {
+    
+	if(init.rand) {
 	#give all the processers a unique random seed
       if(is.null(seed)) #if the user didn't supply seeds
         seed <- 1:length(cl) 
@@ -344,7 +351,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     mlist <- parLapply(cl, nbl, pvclust.node,
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
-                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize) #do the bootstraping
+                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=wordlist) #do the bootstraping
     cat("Done.\n")
     
     mboot <- mlist[[1]]

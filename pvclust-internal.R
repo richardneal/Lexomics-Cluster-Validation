@@ -73,7 +73,7 @@ pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize)
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist)
 {
 
   n     <- nrow(data) #get the number of rows (each row contains a single word)
@@ -111,11 +111,9 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		#names(tcounts) <- colnames(data)		
 		#print(tcounts)
 		for(i in 1:ncol(data)){
-                                                         
-		 wordlist <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times)
-		 size <- length(wordlist) * r
+         size <- length(wordlist[[i]]) * r
          tmpindex <- sample(1:sum(data[,i]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
-         counts <- table(wordlist[tmpindex]) #returns counts for new sample
+         counts <- table(wordlist[[i]][tmpindex]) #returns counts for new sample
 		 
 		 #print(counts)
 		 
