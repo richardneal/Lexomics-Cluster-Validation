@@ -69,130 +69,128 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
     #transpose data so it matches format pvclust expects
     tTable <- t(tTable)
 	
-	test <- createRangeList(tTable)
+	if( !is.null(textlabs) && !is.null(chunksize)) {
+		if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
+		else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
+				L <- length(chunksize)
+				temp <- NULL
+				for(i in 1:L) {
+					for(k in 1:chunksize[i]){
+						temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
+			}
+				}
+		row.names(relFreq) <- temp
+	}
+	}
+	# else 0
 
-	# if( !is.null(textlabs) && !is.null(chunksize)) {
-		# if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
-		# else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
-				# L <- length(chunksize)
-				# temp <- NULL
-				# for(i in 1:L) {
-					# for(k in 1:chunksize[i]){
-						# temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
-			# }
-				# }
-		# row.names(relFreq) <- temp
-	# }
-	# }
-	# # else 0
+	copValues <- numeric(0)
 
-	# copValues <- numeric(0)
-
-	# Sys.time()->startSection; #start timing the bootstraping
+	Sys.time()->startSection; #start timing the bootstraping
 	
-	# if(!runParallel)
-	# {
-		# pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
-	# }
+	if(!runParallel)
+	{
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
+	}
 
-	# else
-	# {
-		# # ADD MORE ERROR CHECKING
-		# library(snowfall) #I will write more about next line missing ip argument
-		# sfInit(parallel=TRUE, cpus=clusterNumber,type=clusterType) #This creates the cluster. If clusterType is SOCK all the processors will be taken from the current computer. If the type is MPI, the processors can be taken
-		                                                           # # from any computer running an MPI implementation, and the MPI program will handle choosing what processors to use
+	else
+	{
+		# ADD MORE ERROR CHECKING
+		library(snowfall) #I will write more about next line missing ip argument
+		sfInit(parallel=TRUE, cpus=clusterNumber,type=clusterType) #This creates the cluster. If clusterType is SOCK all the processors will be taken from the current computer. If the type is MPI, the processors can be taken
+		                                                           # from any computer running an MPI implementation, and the MPI program will handle choosing what processors to use
 																   
-		# if(!sfIsRunning())
-		# {
-			# print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			# pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)			
-		# }
-		# cl <- sfGetCluster()
-		# sfSource( 'pvclust.R' )
-		# sfSource( 'pvclust-internal.R' )
-		# parallel version of pvclust
-		# pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
-	# }
+		if(!sfIsRunning())
+		{
+			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
+			pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)			
+		}
+		cl <- sfGetCluster()
+		sfSource( 'pvclust.R' )
+		sfSource( 'pvclust-internal.R' )
+		#parallel version of pvclust
+		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
+	}
 	
-	# print("Bootstrap runtime:")
-    # print(Sys.time()-startSection);
-	# Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+	print("Bootstrap runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 
-	# # find cophenetic correlation of orignal hclustering	
-	# orginalCopDist <- cophenetic(pCluster$hclust) #get cophenetic distance matrix for original hclust object
-	# originalCor <- cor(orginalCopDist, pCluster$distance) #get correlation with original distance matrix
+	# find cophenetic correlation of orignal hclustering	
+	orginalCopDist <- cophenetic(pCluster$hclust) #get cophenetic distance matrix for original hclust object
+	originalCor <- cor(orginalCopDist, pCluster$distance) #get correlation with original distance matrix
 
-	# # the cophenentic correlations are stored in a series of lists which are themselves stored in a list, so merge them all into one list
-	# listH <- pCluster$storeCop
-	# for(i in listH)
-	# {
-		# for(j in i)
-		# {	
-			# copValues <- c(copValues, j)
-		# }
-	# }
+	# the cophenentic correlations are stored in a series of lists which are themselves stored in a list, so merge them all into one list
+	listH <- pCluster$storeCop
+	for(i in listH)
+	{
+		for(j in i)
+		{	
+			copValues <- c(copValues, j)
+		}
+	}
 
-	# copValues <- sort(copValues) #sort the list
-	# copSize <- length(copValues)
+	copValues <- sort(copValues) #sort the list
+	copSize <- length(copValues)
 	
-	# lowerBound = (1-confidenceInterval) / 2 #to get the lower bound subtract the confidence interval from 1 to get the precentage outside the interval and divide by 2 to get the precentage below the interval
-	# upperBound = 1 - lowerBound #subtract the lowerbound from 100% to get upper end of ranger
+	lowerBound = (1-confidenceInterval) / 2 #to get the lower bound subtract the confidence interval from 1 to get the precentage outside the interval and divide by 2 to get the precentage below the interval
+	upperBound = 1 - lowerBound #subtract the lowerbound from 100% to get upper end of ranger
 	
 	
-	# # copValues <- copValues[round(copSize * lowerBound):round(copSize * upperBound - 1)] #trim list according to the upper and lower bounds
+	# copValues <- copValues[round(copSize * lowerBound):round(copSize * upperBound - 1)] #trim list according to the upper and lower bounds
 	
-	# # print(copValues)
+	# print(copValues)
 	
-	# print(paste("Original Cophenetic correlation", originalCor), sep=" ")
-	# print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
-	# print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
-    # print(paste(lowerBound * 100, "% interval Copheneticcorrelation ", copValues[round(copSize * lowerBound)]), sep="")	
-    # print(paste("Median Cophenetic correlation", median(copValues)), sep=" ")
-	# print(paste(upperBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * upperBound)]), sep="")	
-    # print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
+	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
+	print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
+	print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
+    print(paste(lowerBound * 100, "% interval Copheneticcorrelation ", copValues[round(copSize * lowerBound)]), sep="")	
+    print(paste("Median Cophenetic correlation", median(copValues)), sep=" ")
+	print(paste(upperBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * upperBound)]), sep="")	
+    print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
 	
-	# print(paste("Mean Cophenetic correlation", mean(copValues)), sep=" ")
-    # print(paste("Standard Deviation Cophenetic correlation", sd(copValues)), sep=" ")
+	print(paste("Mean Cophenetic correlation", mean(copValues)), sep=" ")
+    print(paste("Standard Deviation Cophenetic correlation", sd(copValues)), sep=" ")
     
-	# print("Cophenetic analysis runtime:")
-    # print(Sys.time()-startSection);
-	# Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+	print("Cophenetic analysis runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 
 	
-	# # find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
+	# find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
 
-	# plot dendrogram with p-values
-	# # dev.control()
-	# # pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
-	# plot(pCluster)
-	# # dev.off()
+	#plot dendrogram with p-values
+	# dev.control()
+	# pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
+	plot(pCluster)
+	# dev.off()
 
-	# # ask.bak <- par()$ask
-	# # par(ask=TRUE)
+	# ask.bak <- par()$ask
+	# par(ask=TRUE)
 
-	# highlight clusters with high au p-values
-	# # pvrect(pCluster)
+	#highlight clusters with high au p-values
+	# pvrect(pCluster)
 
-	# print the result of multiscale bootstrap resampling
-	# # print(pCluster, digits=3)
+	#print the result of multiscale bootstrap resampling
+	# print(pCluster, digits=3)
 
-	# plot diagnostic for curve fitting
-	# # msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
-								       # # this line will not wok.
+	#plot diagnostic for curve fitting
+	# msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
+								       # this line will not wok.
 
-	# # par(ask=ask.bak)
+	# par(ask=ask.bak)
 
-	# Print clusters with high p-values
-	# # pCluster.pp <- pvpick(pCluster)
-	# # pCluster.pp
+	#Print clusters with high p-values
+	# pCluster.pp <- pvpick(pCluster)
+	# pCluster.pp
 	
-	# print("Total runtime:")
-    # print(Sys.time()-startTotal);
+	print("Total runtime:")
+    print(Sys.time()-startTotal);
 	
-	# if(runParallel)
-	# {
-		# sfStop() #end the cluster
-	# }
+	if(runParallel)
+	{
+		sfStop() #end the cluster
+	}
 }
 
-myCluster("inputTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 3, clusterType = "SOCK")
+myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 3, clusterType = "SOCK")
