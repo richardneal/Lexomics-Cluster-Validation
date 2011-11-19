@@ -330,3 +330,64 @@ distw.pvclust <- function(x,w,method="correlation", use.cor="pairwise.complete.o
   }
   stop("wrong method")
 }
+
+createRangeList <- function(x)
+{
+	numChunks <- ncol(x)
+	numWords <- nrow(x)
+	rangeList <- list()
+	
+	#set up one sublist for each list
+	for(i in 1:numChunks)
+	{
+		wordRangeStart <- 1
+		wordsSeen <- 1
+		chunkRangeList <- list()
+		for(j in 1:numWords)
+		{
+			if(x[j,i] != 0)
+			{
+				wordRange = list(wordIndex = j, start = wordRangeStart, end = (wordRangeStart + x[j,i] - 1))
+				chunkRangeList[[wordsSeen]] <- wordRange
+				wordsSeen <- wordsSeen + 1
+				wordRangeStart <- wordRangeStart + x[j,i]
+			}
+		}
+		rangeList[[i]] <- chunkRangeList
+	}
+	
+	print(x)
+	#print(rangeList)
+	
+	print(findIndexInRangeList(rangeList, 14, 2))
+	
+	return(rangeList)
+}
+
+findIndexInRangeList <- function(rangeList, wordNum, chunk)
+{
+	left <- 1
+	right <- length(rangeList[[chunk]])
+	
+	while(left <= right)
+	{
+		m <- floor((left + right) / 2)
+		
+		if(rangeList[[chunk]][[m]]$end < wordNum)
+		{
+			left <- m + 1
+		}
+		
+		else if(rangeList[[chunk]][[m]]$start > wordNum)
+		{
+			right <- m - 1
+		}
+		
+		else
+		{
+			return(rangeList[[chunk]][[m]]$wordIndex)
+		}
+
+	}
+	return(-1)
+}
