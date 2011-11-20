@@ -94,6 +94,9 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
   w0 <- rep(1,n) # equal weight
   na.flag <- 0
   
+  sect1Time <- 0
+  sect2Time <- 0
+  
   for(i in 1:nboot){
     if(weight && r>10) {  ## <- this part should be improved
       w1 <- as.vector(rmultinom(1,size,w0)) # resampled weight
@@ -110,27 +113,42 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		#print(tcounts)
 		#names(tcounts) <- colnames(data)		
 		#print(tcounts)
-		for(i in 1:ncol(data)){
-         size <- length(wordlist[[i]]) * r
-         tmpindex <- sample(1:sum(data[,i]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
-         counts <- table(wordlist[[i]][tmpindex]) #returns counts for new sample
+		for(j in 1:ncol(data)){
+         size <- length(wordlist[[j]]) * r
 		 
+		 
+		 #Sys.time()->startSection;
+         tmpindex <- sample(1:sum(data[,j]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
+		 #sect1Time <- sect1Time + (Sys.time()-startSection)
+		 
+		 #Sys.time()->startSection;
+         counts <- wordlist[[j]][tmpindex] #returns counts for new sample
 		 #print(counts)
+		 #print(row.names(counts))
 		 
-		 for(j in 1:nrow(data))
-		 {
-			bootStrapData[j,i] = counts[row.names(bootStrapData)[j]]
-			if(is.na(bootStrapData[j,i])) #if there was no occurances of this word in new sample
-			{
-				bootStrapData[j,i] = 0
-			}
-			
-		 }
+		 counts <- (table(factor(counts, levels = row.names(bootStrapData))))
+		 #print(counts)
+
+		 #print(bootStrapData[,i])
+		 
+		 #print(counts)		
+		 #Sys.time()->startSection; 
+		 
+		 bootStrapData[,j] <- counts
+		 #for(j in 1:nrow(data))
+		 #{
+		#	bootStrapData[j,i] = counts[j]
+		# }
+		 
+		 #print(bootStrapData[,i])
+		 #stop()
+		 
+		#sect2Time <- sect2Time + (Sys.time()-startSection)
 		
 		#try resample by clades. Set a cutoff for what clades to use and then sum up counts of all words inside
                 #each clade. Resample each chunk in the clade using those total sums of the clade
 	  }
-
+	  
       #smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
 	  
 	  #bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
@@ -148,6 +166,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
     if(all(is.finite(distance))) { # check if distance is valid
       x.hclust  <- hclust(distance,method=method.hclust) #create the hclust object
       pattern.i <- hc2split(x.hclust)$pattern # get the contents of the clades
+
       edges.cnt <- edges.cnt + table(factor(pattern.i,  levels=pattern)) #add the clades identical to the clades in the original object to the count of the number of times those clades appeared
     } else {
       x.hclust <- NULL
@@ -174,7 +193,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
   boot <- list(edges.cnt=edges.cnt, method.dist=method.dist, use.cor=use.cor,
                method.hclust=method.hclust, nboot=nboot, size=size, r=r, store=st, storeCop=stc) #store all the data in a list
   class(boot) <- "boot.hclust"
-  
+
   return(boot) #return that list to the function call
 }
 

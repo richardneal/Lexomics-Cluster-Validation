@@ -45,6 +45,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	library(stats)
 	Sys.time()->startTotal; #holds start time of program so time to run entire program can be calculated
+	Sys.time()->startSection; #start timing the bootstraping
 	
 	#change this for the text you'd like to input
 	input.data <- read.table(as.character(input.file), header=T,
@@ -86,6 +87,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	copValues <- numeric(0)
 
+	print("Inital runtime:")
+    print(Sys.time()-startSection);
 	Sys.time()->startSection; #start timing the bootstraping
 	
 	if(!runParallel)
@@ -154,7 +157,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
     
 	print("Cophenetic analysis runtime:")
     print(Sys.time()-startSection);
-	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+	#Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 
 	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
@@ -162,7 +165,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	## plot dendrogram with p-values
 	# dev.control()
 	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
-	plot(pCluster)
+	#plot(pCluster)
 	#dev.off()
 
 	#ask.bak <- par()$ask
