@@ -14,9 +14,10 @@ pvclust <- function(data, method.hclust="average",
 
     #print(relFreq)
 
+	#create a list of all the words in each chunk to use in resampling
 	wordlist <- list()
 	
-	for(i in 1:ncol(data))
+	for(i in 1:ncol(data)) #for each chunk
 	{
 		wordlist[[i]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times)
 	}
@@ -300,6 +301,20 @@ parPvclust <- function(cl, data, method.hclust="average",
 
     copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
     
+	#normalize data before getting distance matrix
+    colSums <- apply(data, 2, sum) #each example/observation/object is one column, so find the sums of the columns
+    denoms <- matrix(rep(colSums, dim(data)[1]), byrow=T, ncol=dim(data)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
+    relFreq <- data/denoms
+	
+	#create a list of all the words in each chunk to use in resampling
+	wordlist <- list()
+	
+	for(i in 1:ncol(data)) #for each chunk
+	{
+		wordlist[[i]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times)
+	}
+	
+	
 	if(init.rand) {
 	#give all the processers a unique random seed
       if(is.null(seed)) #if the user didn't supply seeds
@@ -318,7 +333,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     METHODS <- c("ward", "single", "complete", "average", "mcquitty", 
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
-    distance <- dist.pvclust(data, method=method.dist, use.cor=use.cor)
+    distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
     #if finding the cophenetic correlations

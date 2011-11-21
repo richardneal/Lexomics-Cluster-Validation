@@ -106,13 +106,13 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		if(!sfIsRunning())
 		{
 			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			pCluster <- pvclust(relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)			
+			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)			
 		}
 		cl <- sfGetCluster()
 		sfSource( 'pvclust.R' )
 		sfSource( 'pvclust-internal.R' )
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,relFreq, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
+		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
 	}
 	
 	print("Bootstrap runtime:")
@@ -196,4 +196,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	}
 }
 
-myCluster("merge_transpose_GoldheartTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 3, clusterType = "SOCK")
+myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")
