@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, return = FALSE)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -42,7 +42,14 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#confidence interval is the confidence interval for the cophenetic correlations given as a percent entered in decimal form. The program will give the output the cophenetic correlations at the lower and upper ends of the interval. 
 	#The lower bound can be computed as (100% - confidence interval) / 2 and the upper bound as (100% - lower bound). For example if the confidence interval is 95% the lowerbound will be 2.5% and the upper bound 97.5%
 
-
+	#the seed parameter is used to set the seed used for random number generation. By default seed is set to null which will cause the program to use a random seed. If a value for seed is given the program will instead use that
+	#value as the seed for random number generation. When not running in parallel a single value should be entered for seed. When running in parallel a list the same length as clusterNumber should be entered which each item in the list
+	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object stored in the result list the function
+	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$seed
+	
+	#This function will return a list containing the pvclust object, and a list containing all the cophenetic correlations calculated sorted from smallest to largest. The pvclust object is labeled pvClust, and the cophenetic
+	#correlation values is named copValues
+	
 	library(stats)
 	Sys.time()->startTotal; #holds start time of program so time to run entire program can be calculated
 	Sys.time()->startSection; #start timing the bootstraping
@@ -93,7 +100,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed)
 	}
 
 	else
@@ -106,13 +113,13 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		if(!sfIsRunning())
 		{
 			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE)			
+			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed)			
 		}
 		cl <- sfGetCluster()
 		sfSource( 'pvclust.R' )
 		sfSource( 'pvclust-internal.R' )
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE)
+		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed)
 	}
 	
 	print("Bootstrap runtime:")
@@ -165,7 +172,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	## plot dendrogram with p-values
 	# dev.control()
 	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
-	#plot(pCluster)
+	plot(pCluster)
 	#dev.off()
 
 	#ask.bak <- par()$ask
@@ -194,6 +201,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	{
 		sfStop() #end the cluster
 	}
+	
+	return(list(pvClust = pCluster, copValues = copValues))
 }
 
-myCluster("danile-azarius.txt", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")
+result <- myCluster("danile-azarius.txt", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")

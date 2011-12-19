@@ -1,7 +1,14 @@
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE)
+                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL)
   {
+	if(is.null(seed)) #if no seed was specified use the system time as the seed which should effectively be random
+	{
+		seed = as.numeric(Sys.time())
+	}
+
+	set.seed(seed)
+  
     copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
 
     # data: (n,p) matrix, n-samples, p-variables
@@ -54,7 +61,8 @@ pvclust <- function(data, method.hclust="average",
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=wordlist) #do the actual bootstraping
 
-    result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance)
+	print(Sys.time())
+    result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
     return(result) 
   }
@@ -318,8 +326,11 @@ parPvclust <- function(cl, data, method.hclust="average",
 	if(init.rand) {
 	#give all the processers a unique random seed
       if(is.null(seed)) #if the user didn't supply seeds
-        seed <- 1:length(cl) 
-      else if(length(seed) != length(cl)) #if the user supplied seeds make sure there is exactly one seed per processor
+	  {
+		curTime <- as.numeric(Sys.time())
+        seed <- curTime:(curTime+length(cl) - 1) #start the seed at the current time and increment the seed by 1 for each additional processor 
+      }
+	  else if(length(seed) != length(cl)) #if the user supplied seeds make sure there is exactly one seed per processor
         stop("seed and cl should have the same length.")
       
       # setting random seeds
@@ -380,7 +391,7 @@ parPvclust <- function(cl, data, method.hclust="average",
       }
     }
 
-    result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot, distance=distance)
+    result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
     return(result)
   }
