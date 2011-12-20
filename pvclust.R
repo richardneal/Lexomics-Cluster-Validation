@@ -20,6 +20,47 @@ pvclust <- function(data, method.hclust="average",
     relFreq <- data/denoms
 
     #print(relFreq)
+	
+	# hclust for original data
+    METHODS <- c("ward", "single", "complete", "average", "mcquitty",
+                 "median", "centroid")
+    method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
+    distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
+    data.hclust <- hclust(distance, method=method.hclust)
+	
+	print(data.hclust$merge)
+	
+	#NEEDS MUCH BETTER COMMENTING ONCE PROPERLY WORKING
+	
+	cutOffNumber <- 8
+	curCladeNum <- 1 #number of current clade being created
+	cladeChunkIn <- rep(-1, ncol(data)) #holds which clade each chunk is in
+	mergeRowHandled <- rep(FALSE, cutOffNumber) #has this row of the merge table been handled
+	
+	for(i in cutOffNumber:1) #find all clades created by cutoff point
+	{
+		result <- handleMergeRow(data.hclust, cladeChunkIn, mergeRowHandled, i, curCladeNum)
+		cladeChunkIn <- result$cladeChunkIn
+		mergeRowHandled <- result$mergeRowHandled
+		curCladeNum <- result$curCladeNum
+	}
+	
+	for(i in 1:ncol(data))
+	{
+		if(cladeChunkIn[i] == -1) #if chunk is not yet in a clade
+		{
+			cladeChunkIn[i] <- curCladeNum
+			curCladeNum <- curCladeNum + 1 #advance to next clade number
+		}
+	}
+	
+	#test output
+	for(i in 1:ncol(data))
+	{
+		print(paste(i, cladeChunkIn[i]))
+	}
+	
+	#print(cladeChunkIn)
 
 	#create a list of all the words in each chunk to use in resampling
 	wordlist <- list()
@@ -28,14 +69,6 @@ pvclust <- function(data, method.hclust="average",
 	{
 		wordlist[[i]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times)
 	}
-	
-	
-    # hclust for original data
-    METHODS <- c("ward", "single", "complete", "average", "mcquitty",
-                 "median", "centroid")
-    method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
-    distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
-    data.hclust <- hclust(distance, method=method.hclust)
 
     #if finding the cophenetic correlations
     if(storeCop)
@@ -61,7 +94,6 @@ pvclust <- function(data, method.hclust="average",
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=wordlist) #do the actual bootstraping
 
-	print(Sys.time())
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
     return(result) 

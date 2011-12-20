@@ -347,3 +347,77 @@ distw.pvclust <- function(x,w,method="correlation", use.cor="pairwise.complete.o
   }
   stop("wrong method")
 }
+
+#goes through a single row of the merge table as part of the process of determining what chunks are in what clades for clade resampling
+#x is the hcluster object
+handleMergeRow <- function(x, cladeChunkIn, mergeRowHandled, rowNumber, cladeNumber)
+{
+	if(!mergeRowHandled[rowNumber])
+	{
+		mergeRowHandled[rowNumber] <- TRUE
+		
+		if(x$merge[rowNumber,1] < 0) #if an observation was merged at this stage
+		{
+			cladeChunkIn[x$merge[rowNumber,1] * -1] <- cladeNumber
+		}
+		
+		else #clade contains another smaller clade
+		{
+			result <- handleMergeRowRecursive(x, cladeChunkIn, mergeRowHandled, x$merge[rowNumber,1], cladeNumber)
+			cladeChunkIn <- result$cladeChunkIn
+			mergeRowHandled <- result$mergeRowHandled
+		}
+		
+		if(x$merge[rowNumber,2] < 0) #if an observation was merged at this stage
+		{
+			cladeChunkIn[x$merge[rowNumber,2] * -1] <- cladeNumber
+		}
+		
+		else #clade contains another smaller clade
+		{
+			result <- handleMergeRowRecursive(x, cladeChunkIn, mergeRowHandled, x$merge[rowNumber,2], cladeNumber)
+			cladeChunkIn <- result$cladeChunkIn
+			mergeRowHandled <- result$mergeRowHandled
+		}
+		
+		#print(x$merge[rowNumber,])
+		
+		cladeNumber <- cladeNumber + 1 #go to next clade number
+	}
+
+	result <- list(cladeChunkIn = cladeChunkIn, mergeRowHandled = mergeRowHandled, curCladeNumber = cladeNumber)
+	return(result)
+}
+
+#recursive version of handleMergeRow to handle any subclades inside the clade being processed
+handleMergeRowRecursive <- function(x, cladeChunkIn, mergeRowHandled, rowNumber, cladeNumber)
+{
+	mergeRowHandled[rowNumber] <- TRUE
+
+	if(x$merge[rowNumber,1] < 0) #if an observation was merged at this stage
+	{
+		cladeChunkIn[x$merge[rowNumber,1] * -1] <- cladeNumber
+	}
+	
+	else #clade contains another smaller clade
+	{
+		result <- handleMergeRowRecursive(x, cladeChunkIn, mergeRowHandled, x$merge[rowNumber,1], cladeNumber)
+		cladeChunkIn <- result$cladeChunkIn
+		mergeRowHandled <- result$mergeRowHandled
+	}
+	
+	if(x$merge[rowNumber,2] < 0) #if an observation was merged at this stage
+	{
+		cladeChunkIn[x$merge[rowNumber,2] * -1] <- cladeNumber
+	}
+	
+	else #clade contains another smaller clade
+	{
+		result <- handleMergeRowRecursive(x, cladeChunkIn, mergeRowHandled, x$merge[rowNumber,2], cladeNumber)
+		cladeChunkIn <- result$cladeChunkIn
+		mergeRowHandled <- result$mergeRowHandled
+	}
+	
+	result <- list(cladeChunkIn = cladeChunkIn, mergeRowHandled = mergeRowHandled)
+	return(result)
+}
