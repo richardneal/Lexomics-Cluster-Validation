@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, return = FALSE)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cutOffNumber=0)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -100,7 +100,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed)
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber)
 	}
 
 	else
@@ -113,13 +113,13 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		if(!sfIsRunning())
 		{
 			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed)			
+			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber)			
 		}
 		cl <- sfGetCluster()
 		sfSource( 'pvclust.R' )
 		sfSource( 'pvclust-internal.R' )
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed)
+		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cutOffNumber=cutOffNumber)
 	}
 	
 	print("Bootstrap runtime:")
@@ -205,4 +205,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	return(list(pvClust = pCluster, copValues = copValues))
 }
 
-result <- myCluster("danile-azariusNum.txt", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")
+result <- myCluster("danile-azarius.txt", nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")

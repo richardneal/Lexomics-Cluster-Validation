@@ -73,9 +73,8 @@ pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist)
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist, cladeChunkIn, chunkSize)
 {
-
   n     <- nrow(data) #get the number of rows (each row contains a single word)
   size  <- round(n*r, digits=0) #calculate the number of rows to resample
   if(size == 0)
@@ -114,15 +113,17 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		#names(tcounts) <- colnames(data)		
 		#print(tcounts)
 		for(j in 1:ncol(data)){
-         size <- length(wordlist[[j]]) * r
+         size <- chunkSize[[j]] * r
 		 
+		 wordlistIndex <- cladeChunkIn[j]
 		 
 		 #Sys.time()->startSection;
-         tmpindex <- sample(1:sum(data[,j]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
+         tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
 		 #sect1Time <- sect1Time + (Sys.time()-startSection)
 		 
 		 #Sys.time()->startSection;
-         counts <- wordlist[[j]][tmpindex] #returns counts for new sample
+         counts <- wordlist[[wordlistIndex]][tmpindex] #returns counts for new sample
+
 		 #print(counts)
 		 #print(row.names(counts))
 		 
@@ -140,7 +141,6 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		#	bootStrapData[j,i] = counts[j]
 		# }
 		 
-		 #print(bootStrapData[,i])
 		 #stop()
 		 
 		#sect2Time <- sect2Time + (Sys.time()-startSection)
