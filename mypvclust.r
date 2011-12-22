@@ -47,6 +47,11 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object stored in the result list the function
 	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$seed
 	
+	#cutOffNumber is a parameter to allow resampling by clades. Normally the resampling happens on a per chunk basis, meaning that the words in the new chunks created from the bootstraping are taken from the list of words in that chunk
+	#when resampling is done by clades each chunk inside of one of the clades used in the resampling draws from all the words in the clade when resampling is perfomed.  The cutOffNumber specifies what clades are used. The program will
+	#look at the first cutOffNumber clades that are created and use those as the clades to resample by, with and chunks not put into a clade by that point counting as being in their own unique clades. If cutOffNumber is set to 0, this
+	#effectively duplicates doing resampling on a per chunk basis.
+	
 	#This function will return a list containing the pvclust object, and a list containing all the cophenetic correlations calculated sorted from smallest to largest. The pvclust object is labeled pvClust, and the cophenetic
 	#correlation values is named copValues
 	

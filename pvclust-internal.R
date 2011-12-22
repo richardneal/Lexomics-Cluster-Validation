@@ -106,56 +106,34 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	  
       suppressWarnings(distance <- distw.pvclust(data,w1,method=method.dist,use.cor=use.cor))
     } else {
-		bootStrapData <- matrix(data = 0, nrow = nrow(data), ncol = ncol(data), dimnames=list(rownames(data),colnames(data)))
-		#print(tcounts)
-		#row.names(tcounts) <- rownames(data)
-		#print(tcounts)
-		#names(tcounts) <- colnames(data)		
-		#print(tcounts)
-		for(j in 1:ncol(data)){
-         size <- chunkSize[[j]] * r
-		 
-		 wordlistIndex <- cladeChunkIn[j]
+		bootStrapData <- matrix(data = 0, nrow = nrow(data), ncol = ncol(data), dimnames=list(rownames(data),colnames(data))) #set up empty table to hold word counts for bootstrapped data
+		
+		for(j in 1:ncol(data)){ #for each chunk
+         size <- chunkSize[[j]] * r #calculate the number of words in the new bootstrapped chunk based on original size and r value
+									#size will equal sum(data[,i]) when r = 1
+									
+		 wordlistIndex <- cladeChunkIn[j] #get clade the chunk is in to know what sublist of the wordlist to use
 		 
 		 #Sys.time()->startSection;
-         tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #size will equal sum(data[,i]) when r = 1
+         tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #create array of index values one for each word in the new bootstrapped chunk
 		 #sect1Time <- sect1Time + (Sys.time()-startSection)
 		 
 		 #Sys.time()->startSection;
-         counts <- wordlist[[wordlistIndex]][tmpindex] #returns counts for new sample
-
-		 #print(counts)
-		 #print(row.names(counts))
+         counts <- wordlist[[wordlistIndex]][tmpindex] #convert the index values into the actual words
 		 
-		 counts <- (table(factor(counts, levels = row.names(bootStrapData))))
-		 #print(counts)
-
-		 #print(bootStrapData[,i])
-		 
-		 #print(counts)		
+		 counts <- (table(factor(counts, levels = row.names(bootStrapData)))) #get the number of times each word appears in the new sample
+	
 		 #Sys.time()->startSection; 
 		 
-		 bootStrapData[,j] <- counts
-		 #for(j in 1:nrow(data))
-		 #{
-		#	bootStrapData[j,i] = counts[j]
-		# }
-		 
-		 #stop()
-		 
+		 bootStrapData[,j] <- counts #store the word counts
+
 		#sect2Time <- sect2Time + (Sys.time()-startSection)
-		
-		#try resample by clades. Set a cutoff for what clades to use and then sum up counts of all words inside
-                #each clade. Resample each chunk in the clade using those total sums of the clade
 	  }
 	  
-      #smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
-	  
 	  #bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
-      #print(bootStrapData)
 	  if(normalize)
 	  {
-	  #normalize the new data
+		  #normalize the new data
 		  colSums <- apply(bootStrapData, 2, sum) #each example/observation/object is one column, so find the sums of the columns
 		  denoms <- matrix(rep(colSums, dim(bootStrapData)[1]), byrow=T, ncol=dim(bootStrapData)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
 		  bootStrapData <- bootStrapData/denoms
