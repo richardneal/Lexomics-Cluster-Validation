@@ -26,6 +26,7 @@ pvclust <- function(data, method.hclust="average",
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
+	relChangeInDistance(distance)
     data.hclust <- hclust(distance, method=method.hclust)
 	
 	#print(data.hclust$merge)
@@ -378,6 +379,7 @@ parPvclust <- function(cl, data, method.hclust="average",
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
+	relChangeInDistance(distance)
     data.hclust <- hclust(distance, method=method.hclust)
 	
 	curCladeNum <- 1 #number of current clade being created

@@ -143,6 +143,16 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
     }
     if(all(is.finite(distance))) { # check if distance is valid
       x.hclust  <- hclust(distance,method=method.hclust) #create the hclust object
+	  
+	  filename <- paste(r, i, ".png", sep = "")
+	  png(filename)
+	  
+	  plot(x.hclust)
+	  dev.off()
+	  
+	  #cat("Hit <enter> to continue...")
+      #readline()
+      #invisible()
       pattern.i <- hc2split(x.hclust)$pattern # get the contents of the clades
 
       edges.cnt <- edges.cnt + table(factor(pattern.i,  levels=pattern)) #add the clades identical to the clades in the original object to the count of the number of times those clades appeared
@@ -399,3 +409,55 @@ handleMergeRowRecursive <- function(x, cladeChunkIn, mergeRowHandled, rowNumber,
 	result <- list(cladeChunkIn = cladeChunkIn, mergeRowHandled = mergeRowHandled)
 	return(result)
 }
+
+ relChangeInDistance <- function(distMatrix)
+ {
+		distMatrix <- as.matrix(distMatrix)
+		print(distMatrix)
+		n <- nrow(distMatrix)
+		
+		#fill in other half of distance table for easier computation
+		
+		for(i in 1:n)
+		{
+			minDist <- 99999999
+			#secondminDist <- 99999999
+			
+			for(j in 1:n)
+			{
+				if(i != j)
+				{
+					if(distMatrix[i,j] < minDist)
+					{
+						#secondminDist <- minDist
+						minDist <- distMatrix[i,j] 
+					}
+					
+					#else if(distMatrix[i,j] < secondminDist)
+					#{
+					#	secondminDist <- distMatrix[i,j] 
+					#}
+				}
+				
+			}
+			
+			totalChange <- 0
+			
+			for(j in 1:n)
+			{
+				if(i != j && distMatrix[i,j] != minDist)
+				{
+					relChange <- ((distMatrix[i,j] - minDist) / minDist) * 100
+					#print(relChange)
+					totalChange <- totalChange + relChange
+				}
+			}
+			
+			#relChange <- ((secondminDist - minDist) / minDist) * 100
+			
+			averageChange <- totalChange / (n-2)
+			print(paste(rownames(distMatrix)[i], minDist, averageChange))
+				
+			#difference <- secondminDist - minDist
+		}
+ }

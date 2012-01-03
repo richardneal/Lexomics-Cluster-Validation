@@ -6,9 +6,9 @@
 
 from random import randrange
 
-numWords = 100
-numChunks = 4 #can only generate 702 chunks with current code, due to difficulties generating unique strings as chunk names. This should enougth for any testing though
-maxWordCount = 5
+numWords = 3000
+numChunks = 11 #can only generate 702 chunks with current code, due to difficulties generating unique strings as chunk names. This should enougth for any testing though
+maxWordCount = 50
 
 output = open("inputTest.tsv", 'w')
 

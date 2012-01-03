@@ -210,4 +210,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	return(list(pvClust = pCluster, copValues = copValues))
 }
 
-result <- myCluster("danile-azarius.txt", nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")
+result <- myCluster(input.file = "inputTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
