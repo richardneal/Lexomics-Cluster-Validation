@@ -1,6 +1,6 @@
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cutOffNumber=0)
+                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cutOffNumber=0, storeChunks=FALSE)
   {
 	if(is.null(seed)) #if no seed was specified use the system time as the seed which should effectively be random
 	{
@@ -102,7 +102,8 @@ pvclust <- function(data, method.hclust="average",
 	
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
-                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize) #do the actual bootstraping
+                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
+					storeChunks=storeChunks) #do the actual bootstraping
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
@@ -340,7 +341,7 @@ parPvclust <- function(cl, data, method.hclust="average",
                        method.dist="correlation", use.cor="pairwise.complete.obs",
                        nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, storeCop=FALSE,
                        weight=FALSE, normalize=TRUE,
-                       init.rand=TRUE, seed=NULL, cutOffNumber=0)
+                       init.rand=TRUE, seed=NULL, cutOffNumber=0, storeChunks=FALSE)
   {
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
 
@@ -459,7 +460,8 @@ parPvclust <- function(cl, data, method.hclust="average",
     mlist <- parLapply(cl, nbl, pvclust.node,
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
-                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize) #do the bootstraping
+                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
+					   storeChunks=storeChunks) #do the bootstraping
     cat("Done.\n")
     
     mboot <- mlist[[1]]
@@ -470,6 +472,7 @@ parPvclust <- function(cl, data, method.hclust="average",
         mboot[[j]]$nboot <- mboot[[j]]$nboot + mlist[[i]][[j]]$nboot
         mboot[[j]]$store <- c(mboot[[j]]$store, mlist[[i]][[j]]$store)
         mboot[[j]]$storeCop <- c(mboot[[j]]$storeCop, mlist[[i]][[j]]$storeCop)
+        mboot[[j]]$storeChunks <- c(mboot[[j]]$storeChunks, mlist[[i]][[j]]$storeChunks)
       }
     }
 

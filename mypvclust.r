@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cutOffNumber=0)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cutOffNumber=0, store=FALSE, storeChunks=FALSE)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -52,12 +52,31 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#look at the first cutOffNumber clades that are created and use those as the clades to resample by, with and chunks not put into a clade by that point counting as being in their own unique clades. If cutOffNumber is set to 0, this
 	#effectively duplicates doing resampling on a per chunk basis.
 	
+	#store is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the hclust objects created during
+	#the bootstrapping. The hclust obects will be stored in a list as the attribute store of the pvclust object stored in the result list the function
+	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$store. The format of store is as a list containing a number of sublists with there being one sublist for each
+	#r value pvclust used, and each sublist having all the hclust objects created for that r value
+	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
+	#and only used on smaller test runs to see what kind of dendrograms are being created. 
+	
+	#storeChunks is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the new chunks created during
+	#the bootstrapping. The new chunks	will be stored in a list as the attribute storeChunk of the pvclust object stored in the result list the function
+	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$storeChunks. The format of store is as a list containing a number of sublists with there being one sublist for each
+	#r value pvclust used, and each sublist having all the new chunks created for that r value
+	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
+	#and only used on smaller test runs to see what kind of dendrograms are being created. 
+	
+	#store
+	
 	#This function will return a list containing the pvclust object, and a list containing all the cophenetic correlations calculated sorted from smallest to largest. The pvclust object is labeled pvClust, and the cophenetic
-	#correlation values is named copValues
+	#correlation values is named copValues.
 	
 	library(stats)
 	Sys.time()->startTotal; #holds start time of program so time to run entire program can be calculated
 	Sys.time()->startSection; #start timing the bootstraping
+	
+	#set inital values for certain variables
+	storeData <- NULL #st
 	
 	#change this for the text you'd like to input
 	input.data <- read.table(as.character(input.file), header=T,
@@ -69,32 +88,24 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	else
 		tTable <- t( input.data )
 
-	#convort input into relative frequencies
-	#rowSums <- apply(tTable, 1, sum) #get sum of each row
-	#denoms <- matrix(rep(rowSums, dim(tTable)[2]), byrow=F, ncol=dim(tTable)[2]) #set up table to divide current table by
-	#relFreq <- tTable/denoms #divide each number by the sum of the row it's in to get it's frequncy
-
-    #transpose relFreq so it matches the format pvclust expects
-	#relFreq <- t(relFreq)
-
-        #print(relFreq)
-
     #transpose data so it matches format pvclust expects
     tTable <- t(tTable)
 
-	if( !is.null(textlabs) && !is.null(chunksize)) {
-		if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
-		else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
-				L <- length(chunksize)
-				temp <- NULL
-				for(i in 1:L) {
-					for(k in 1:chunksize[i]){
-						temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
-			}
-				}
-		row.names(relFreq) <- temp
-	}
-	}
+	#Old code to change the labels of the chunks. Hasn't been used in a while and probally doesn't work anymore with all the changes since it was written. Still leaving it in
+	#as a starting point in case someone decides it should be reimplemented.
+	#if( !is.null(textlabs) && !is.null(chunksize)) {
+	#	if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
+	#	else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
+	#			L <- length(chunksize)
+	#			temp <- NULL
+	#			for(i in 1:L) {
+	#				for(k in 1:chunksize[i]){
+	#					temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
+	#		}
+	#			}
+	#	row.names(relFreq) <- temp
+	#}
+	#}
 	# else 0
 
 	copValues <- numeric(0)
@@ -105,7 +116,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber)
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber, store=store, storeChunks=storeChunks)
 	}
 
 	else
@@ -118,13 +129,13 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		if(!sfIsRunning())
 		{
 			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber)			
+			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber, store=store, storeChunks=storeChunks)			
 		}
 		cl <- sfGetCluster()
 		sfSource( 'pvclust.R' )
 		sfSource( 'pvclust-internal.R' )
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cutOffNumber=cutOffNumber)
+		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cutOffNumber=cutOffNumber, store=store, storeChunks=storeChunks)
 	}
 	
 	print("Bootstrap runtime:")
@@ -210,4 +221,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	return(list(pvClust = pCluster, copValues = copValues))
 }
 
-result <- myCluster("danile-azarius.txt", nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 3, clusterType = "SOCK")
+result <- myCluster("inputTest.tsv", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", storeChunks=TRUE)

@@ -6,9 +6,10 @@
 
 from random import randrange
 
-numWords = 100
-numChunks = 4 #can only generate 702 chunks with current code, due to difficulties generating unique strings as chunk names. This should enougth for any testing though
-maxWordCount = 5
+numWords = 500
+numChunks = 10 #can only generate 702 chunks with current code, due to difficulties generating unique strings as chunk names. This should enougth for any testing though
+minWordCount = 0
+maxWordCount = 6
 
 output = open("inputTest.tsv", 'w')
 
@@ -29,10 +30,28 @@ for i in range(0,numChunks):
         line = line + chr(i % 26 + 65)
 
         for j in range(0,numWords):
-                n = randrange(0,maxWordCount,1)
+                n = randrange(minWordCount,maxWordCount + 1,1)
                 line = line + "\t" + str(n)
 				
         line = line + "\n"
         output.write(line)
 
+i = 10
+line = ""
+if(i > 26):
+		line = chr(i / 26 + 65)
+	
+line = line + chr(i % 26 + 65)
+
+for j in range(0,250):
+		n = randrange(1,maxWordCount + 1,1)
+		line = line + "\t" + str(n)
+		
+for j in range(250,500):
+		line = line + "\t" + str(0)
+		
+line = line + "\n"
+output.write(line)
+		
 output.close()
+
