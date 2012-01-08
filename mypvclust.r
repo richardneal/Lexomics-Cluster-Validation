@@ -44,8 +44,8 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 
 	#the seed parameter is used to set the seed used for random number generation. By default seed is set to null which will cause the program to use a random seed. If a value for seed is given the program will instead use that
 	#value as the seed for random number generation. When not running in parallel a single value should be entered for seed. When running in parallel a list the same length as clusterNumber should be entered which each item in the list
-	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object stored in the result list the function
-	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$seed
+	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object returned
+	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$seed.
 	
 	#cutOffNumber is a parameter to allow resampling by clades. Normally the resampling happens on a per chunk basis, meaning that the words in the new chunks created from the bootstraping are taken from the list of words in that chunk
 	#when resampling is done by clades each chunk inside of one of the clades used in the resampling draws from all the words in the clade when resampling is perfomed.  The cutOffNumber specifies what clades are used. The program will
@@ -53,23 +53,22 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	#effectively duplicates doing resampling on a per chunk basis.
 	
 	#store is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the hclust objects created during
-	#the bootstrapping. The hclust obects will be stored in a list as the attribute store of the pvclust object stored in the result list the function
-	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$store. The format of store is as a list containing a number of sublists with there being one sublist for each
+	#the bootstrapping. The hclust obects will be stored in a list as the attribute store of the of the pvclust object returned
+	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$store. The format of store is as a list containing a number of sublists with there being one sublist for each
 	#r value pvclust used, and each sublist having all the hclust objects created for that r value
 	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
 	#and only used on smaller test runs to see what kind of dendrograms are being created. 
 	
 	#storeChunks is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the new chunks created during
-	#the bootstrapping. The new chunks	will be stored in a list as the attribute storeChunk of the pvclust object stored in the result list the function
-	#returned. For example if you named the list returned result the seed can be accessed as follows: result$pvClust$storeChunks. The format of store is as a list containing a number of sublists with there being one sublist for each
-	#r value pvclust used, and each sublist having all the new chunks created for that r value
+	#the bootstrapping. The new chunks	will be stored in a list as the attribute storeChunk of the pvclust object returned
+	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$storeChunks. The format of storeChunks is as a list containing
+	#a number of sublists with there being one sublist for each r value pvclust used, and each sublist having all the new chunks created for that r value
 	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
 	#and only used on smaller test runs to see what kind of dendrograms are being created. 
 	
-	#store
-	
-	#This function will return a list containing the pvclust object, and a list containing all the cophenetic correlations calculated sorted from smallest to largest. The pvclust object is labeled pvClust, and the cophenetic
-	#correlation values is named copValues.
+	#This function will return a list containing a modified pvclust object with a number of additional attributes. The storeCop attribute is a list of lists with each sublist containing the cophenetic correlation values
+	#for all the hclust objects generated for a particular r value. The first sublist contains the values for the first r value used and so on. There is also a seed attribute and a storeChunks attributes which are described
+	#in the documentation for the parameters with the same names. If you want to see what the r values where they are stored as a list in the attribute r
 	
 	library(stats)
 	Sys.time()->startTotal; #holds start time of program so time to run entire program can be calculated
@@ -188,7 +187,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 		sfStop() #end the cluster
 	}
 	
-	return(list(pvClust = pCluster, copValues = copValues))
+	return(pCluster)
 }
 
-result <- myCluster("inputTest.tsv", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", storeChunks=TRUE)
+result <- myCluster("SimpleTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", storeChunks=TRUE, cutOffNumber = 1)
