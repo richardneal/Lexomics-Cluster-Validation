@@ -162,11 +162,6 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	lowerBound = (1-confidenceInterval) / 2 #to get the lower bound subtract the confidence interval from 1 to get the precentage outside the interval and divide by 2 to get the precentage below the interval
 	upperBound = 1 - lowerBound #subtract the lowerbound from 100% to get upper end of ranger
 	
-	
-	#copValues <- copValues[round(copSize * lowerBound):round(copSize * upperBound - 1)] #trim list according to the upper and lower bounds
-	
-	#print(copValues)
-	
 	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
 	print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
 	print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
@@ -180,35 +175,10 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
     
 	print("Cophenetic analysis runtime:")
     print(Sys.time()-startSection);
-	#Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
-
 	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
-
-	## plot dendrogram with p-values
-	# dev.control()
-	#pdf("Testout.pdf" , onefile = TRUE, width=7.25, height=10)
 	plot(pCluster)
-	#dev.off()
-
-	#ask.bak <- par()$ask
-	#par(ask=TRUE)
-
-	## highlight clusters with high au p-values
-	#pvrect(pCluster)
-
-	## print the result of multiscale bootstrap resampling
-	#print(pCluster, digits=3)
-
-	## plot diagnostic for curve fitting
-	#msplot(pCluster, edges=c(2,4,6,7)) #note if the numbers in edges are higher then the number of actual edges (which is the number of observations minus 1)
-								       #this line will not wok.
-
-	#par(ask=ask.bak)
-
-	## Print clusters with high p-values
-	#pCluster.pp <- pvpick(pCluster)
-	#pCluster.pp
+	
 	
 	print("Total runtime:")
     print(Sys.time()-startTotal);
