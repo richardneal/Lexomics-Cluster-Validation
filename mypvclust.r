@@ -190,4 +190,4 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	return(pCluster)
 }
 
-result <- myCluster("SimpleTest.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", storeChunks=TRUE, cutOffNumber = 1)
+result <- myCluster("inputTestStandard.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", storeChunks=TRUE, cutOffNumber = 1)

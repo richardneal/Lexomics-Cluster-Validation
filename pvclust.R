@@ -16,6 +16,7 @@ pvclust <- function(data, method.hclust="average",
 
     #normalize data before getting distance matrix
     colSums <- apply(data, 2, sum) #each example/observation/object is one column, so find the sums of the columns
+	print(colSums)
     denoms <- matrix(rep(colSums, dim(data)[1]), byrow=T, ncol=dim(data)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
     relFreq <- data/denoms
 
@@ -69,13 +70,14 @@ pvclust <- function(data, method.hclust="average",
 		if(!cladeStarted[cladeChunkIn[i]]) #if the chunk is the first chunk in it's clade
 		{
 			cladewordlist[[cladeChunkIn[i]]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times) 
-			cladeStarted[i] <- TRUE #mark the the clade has been started
+			cladeStarted[cladeChunkIn[i]] <- TRUE #mark the the clade has been started
 		}
 		
 		else
 		{
-			cladewordlist[[cladeChunkIn[i]]] <- c(cladewordlist[[cladeChunkIn[i]]], (rep(rownames(data),data[,i]))) #gets all words in the chunk ordered by word (each word appears count times) 
+			cladewordlist[[cladeChunkIn[i]]] <- c(cladewordlist[[cladeChunkIn[i]]], (rep(rownames(data),data[,i]))) #gets all words in the chunk ordered by word (each word appears count times)
 																													#and adds them to all the other words in the clade
+																													
 		}
 	}
 	
@@ -420,7 +422,7 @@ parPvclust <- function(cl, data, method.hclust="average",
 		if(!cladeStarted[cladeChunkIn[i]]) #if the chunk is the first chunk in it's clade
 		{
 			cladewordlist[[cladeChunkIn[i]]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times) 
-			cladeStarted[i] <- TRUE #mark the the clade has been started
+			cladeStarted[cladeChunkIn[i]] <- TRUE #mark the the clade has been started
 		}
 		
 		else
