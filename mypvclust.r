@@ -9,7 +9,7 @@ source ( 'pvclust-internal.R' )
 # textlabs and chunksize must have same length and are assumed to correspond elementwise
 # so that first textlabs has first chunksize number of chunks
 
-myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
+myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
 					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cutOffNumber=0, store=FALSE, storeChunks=FALSE)
 {
@@ -176,8 +176,13 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
     print(Sys.time()-startSection);
 	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
-	plot(pCluster)
+	#plot(pCluster)
 	
+	if(!is.null(filename))
+	{
+		plot(pCluster, filename)
+		dev.off()
+	}
 	
 	print("Total runtime:")
     print(Sys.time()-startTotal);
@@ -190,4 +195,7 @@ myCluster <- function(input.file , textlabs = NULL , chunksize = NULL ,
 	return(pCluster)
 }
 
-result <- myCluster("inputTestStandard.tsv", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", storeChunks=TRUE, cutOffNumber = 1)
+result <- myCluster("SimpleTest.tsv", filename = "a.png", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("danile-azarius.txt", filename = "b.png", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("danile-azarius.txt", filename = "c.png", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("danile-azarius.txt", filename = "d.png", nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")

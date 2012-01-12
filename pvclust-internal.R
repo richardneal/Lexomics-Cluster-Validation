@@ -105,7 +105,31 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	  }
 	  
       suppressWarnings(distance <- distw.pvclust(data,w1,method=method.dist,use.cor=use.cor))
-    } else {
+    } 
+	
+	else if(TRUE) #row resampling is done in here. Disabled by default until I decide if it should be a parameter
+	{
+	    smpl <- sample(1:n, 3, replace=TRUE) #creates a index vector with each element being the index of the row chosen
+
+		bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
+
+		print(data)
+		print(smpl)
+		print(bootStrapData)
+		print(dim(bootStrapData))
+		
+		if(normalize)
+		{
+			#normalize the new data
+			colSums <- apply(bootStrapData, 2, sum) #each example/observation/object is one column, so find the sums of the columns
+			denoms <- matrix(rep(colSums, dim(bootStrapData)[1]), byrow=T, ncol=dim(bootStrapData)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
+			bootStrapData <- bootStrapData/denoms
+		}
+
+		suppressWarnings(distance <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor)) #ceate the new distance matrix
+	}
+	
+	else {
 		bootStrapData <- matrix(data = 0, nrow = nrow(data), ncol = ncol(data), dimnames=list(rownames(data),colnames(data))) #set up empty table to hold word counts for bootstrapped data
 		
 		for(j in 1:ncol(data)){ #for each chunk
@@ -145,6 +169,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	  
       suppressWarnings(distance  <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor)) #ceate the new distance matrix
     }
+	
     if(all(is.finite(distance))) { # check if distance is valid
       x.hclust  <- hclust(distance,method=method.hclust) #create the hclust object
       pattern.i <- hc2split(x.hclust)$pattern # get the contents of the clades
@@ -154,17 +179,16 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
       x.hclust <- NULL
 	  na.flag <- 1
     }
-
+  
     if(store) #if storing the hclust objects
       st[[i]] <- x.hclust
 
-
     if(storeCop)  #if storing cophenetic corelations, find and store the correlation now
     {
+		x.hclust
         bootCop <- cophenetic(x.hclust) #get the cophenetic distance matrix
         stc[[i]] <- cor(copDistance, bootCop) #find the correlation between the cophenetic distance matrix and the distance matrix from the original data.
     }
-
   }
   cat("Done.\n")
   # bootstrap done

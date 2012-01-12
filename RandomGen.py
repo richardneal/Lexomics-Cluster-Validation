@@ -7,7 +7,7 @@
 from random import randrange
 
 numWords = 500 #number of worods to use in each chunk
-numChunks = 30 #number of chunks to generate. The code can only generate 702 chunks with current code, due to difficulties generating unique strings as chunk names. This should enough for any testing though
+numChunks = 10 #number of chunks to generate. The code can only generate 702 chunks with current code, due to difficulties generating unique strings as chunk names. This should enough for any testing though
 minWordCount = 0
 maxWordCount = 6
 
@@ -43,21 +43,21 @@ for i in range(0,numChunks): #for each chunk
 
         
 #Code used to generate special distant chunk.  Will be removed when I'm certain I no longer want any of it
-#i = 10
-#line = ""
-#if(i > 26):
-#       line = chr(i / 26 + 65)
-#   
-#line = line + chr(i % 26 + 65)
-#for j in range(0,250):
-#       n = randrange(1,maxWordCount + 1,1)
-#       line = line + "\t" + str(n)
-#       
-#for j in range(250,500):
-#       line = line + "\t" + str(0)
+i = 10
+line = ""
+if(i > 26):
+       line = chr(i / 26 + 65)
+   
+line = line + chr(i % 26 + 65)
+for j in range(0,250):
+       n = randrange(1,maxWordCount + 1,1)
+       line = line + "\t" + str(n)
+       
+for j in range(250,500):
+       line = line + "\t" + str(0)
 
-#line = line + "\n"
-#output.write(line)
+line = line + "\n"
+output.write(line)
         
 output.close()
 

@@ -16,7 +16,7 @@ pvclust <- function(data, method.hclust="average",
 
     #normalize data before getting distance matrix
     colSums <- apply(data, 2, sum) #each example/observation/object is one column, so find the sums of the columns
-	print(colSums)
+	#print(colSums)
     denoms <- matrix(rep(colSums, dim(data)[1]), byrow=T, ncol=dim(data)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
     relFreq <- data/denoms
 
@@ -29,41 +29,30 @@ pvclust <- function(data, method.hclust="average",
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	#print(data.hclust$merge)
-	
-	curCladeNum <- 1 #number of current clade being created
-	cladeChunkIn <- rep(-1, ncol(data)) #holds which clade each chunk is in
-	mergeRowHandled <- rep(FALSE, cutOffNumber) #has this row of the merge table been handled
-	
-	if(cutOffNumber != 0) #if there is a cutoff point for clades
+	if(cutOffNumber == 0) #if resampling by chunk
 	{
-		for(i in cutOffNumber:1) #find all clades created by cutoff point
-		{
-			result <- handleMergeRow(data.hclust, cladeChunkIn, mergeRowHandled, i, curCladeNum)
-			cladeChunkIn <- result$cladeChunkIn
-			mergeRowHandled <- result$mergeRowHandled
-			curCladeNum <- result$curCladeNum
-		}
+		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
+		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
+											   #but still exists in this case to allow both sampling functions to primarly use the same code
 	}
-	for(i in 1:ncol(data))
+	
+	else #there is a desired number of clades to resample by 
 	{
-		if(cladeChunkIn[i] == -1) #if chunk is not yet in a clade
-		{
-			cladeChunkIn[i] <- curCladeNum
-			curCladeNum <- curCladeNum + 1 #advance to next clade number
-		}
+		cladeChunkIn <- cutree(data.hclust, k = cutOffNumber)
+		cladeStarted <- rep(FALSE, cutOffNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
+												 #(ie had their first chunk already handled)
 	}
-
+	
 	chunkSize <- list() #stores total number of words in the chunk
+	
+	#print(cladeChunkIn)
+	
 	for(i in 1:ncol(data))
 	{
 		chunkSize[[i]] <- sum(data[,i]) #total number of words in the chunk is sum of the number of each individual word
 	}
 
 	cladewordlist <- list() #list of words in each clade to use for resampling
-	 
-	cladeStarted <- rep(FALSE, curCladeNum - 1) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
-												#(ie had their first chunk already handled)
 	
 	for(i in 1:ncol(data)) #for each chunk
 	{
@@ -112,12 +101,17 @@ pvclust <- function(data, method.hclust="average",
     return(result) 
   }
 
-plot.pvclust <- function(x, print.pv=TRUE, print.num=TRUE, float=0.01,
+plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
                          main=NULL, sub=NULL, xlab=NULL, height=800, width=800,...)
 {
-  if(.Platform$OS.type == "windows")
+  if(!is.null(filename))
+  {
+	png(filename, width=width, height=height)
+  }
+
+  else if(.Platform$OS.type == "windows")
   {
 	windows(record=TRUE, width=width, height=height)
   }
@@ -383,39 +377,30 @@ parPvclust <- function(cl, data, method.hclust="average",
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	curCladeNum <- 1 #number of current clade being created
-	cladeChunkIn <- rep(-1, ncol(data)) #holds which clade each chunk is in
-	mergeRowHandled <- rep(FALSE, cutOffNumber) #has this row of the merge table been handled
+	if(cutOffNumber == 0) #if resampling by chunk
+	{
+		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
+		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
+											   #but still exists in this case to allow both sampling functions to primarly use the same code
+	}
 	
-	if(cutOffNumber != 0) #if there is a cutoff point for clades
+	else #there is a desired number of clades to resample by 
 	{
-		for(i in cutOffNumber:1) #find all clades created by cutoff point
-		{
-			result <- handleMergeRow(data.hclust, cladeChunkIn, mergeRowHandled, i, curCladeNum)
-			cladeChunkIn <- result$cladeChunkIn
-			mergeRowHandled <- result$mergeRowHandled
-			curCladeNum <- result$curCladeNum
-		}
+		cladeChunkIn <- cutree(data.hclust, k = cutOffNumber)
+		cladeStarted <- rep(FALSE, cutOffNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
+												 #(ie had their first chunk already handled)
 	}
-	for(i in 1:ncol(data))
-	{
-		if(cladeChunkIn[i] == -1) #if chunk is not yet in a clade
-		{
-			cladeChunkIn[i] <- curCladeNum
-			curCladeNum <- curCladeNum + 1 #advance to next clade number
-		}
-	}
-
+	
 	chunkSize <- list() #stores total number of words in the chunk
+	
+	print(cladeChunkIn)
+	
 	for(i in 1:ncol(data))
 	{
 		chunkSize[[i]] <- sum(data[,i]) #total number of words in the chunk is sum of the number of each individual word
 	}
 
 	cladewordlist <- list() #list of words in each clade to use for resampling
-	 
-	cladeStarted <- rep(FALSE, curCladeNum - 1) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
-												#(ie had their first chunk already handled)
 	
 	for(i in 1:ncol(data)) #for each chunk
 	{
@@ -427,8 +412,8 @@ parPvclust <- function(cl, data, method.hclust="average",
 		
 		else
 		{
-			cladewordlist[[cladeChunkIn[i]]] <- c(cladewordlist[[cladeChunkIn[i]]], (rep(rownames(data),data[,i]))) #gets all words in the chunk ordered by word (each word appears count times) 
-																													#and adds them to all the other words in the clade
+			cladewordlist[[cladeChunkIn[i]]] <- c(cladewordlist[[cladeChunkIn[i]]], (rep(rownames(data),data[,i]))) #gets all words in the chunk ordered by word (each word appears count times)
+																													#and adds them to all the other words in the clade																													
 		}
 	}
 	
