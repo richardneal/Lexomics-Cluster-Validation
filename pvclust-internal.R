@@ -109,14 +109,14 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	
 	else if(TRUE) #row resampling is done in here. Disabled by default until I decide if it should be a parameter
 	{
-	    smpl <- sample(1:n, 3, replace=TRUE) #creates a index vector with each element being the index of the row chosen
+	    smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
 
 		bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
 
-		print(data)
-		print(smpl)
-		print(bootStrapData)
-		print(dim(bootStrapData))
+		#print(data)
+		#print(smpl)
+		#print(bootStrapData)
+		#print(dim(bootStrapData))
 		
 		if(normalize)
 		{
