@@ -73,7 +73,7 @@ pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist, cladeChunkIn, chunkSize, storeChunks)
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist, cladeChunkIn, chunkSize, storeChunks, rowSample=FALSE)
 {
   n     <- nrow(data) #get the number of rows (each row contains a single word)
   size  <- round(n*r, digits=0) #calculate the number of rows to resample
@@ -107,7 +107,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
       suppressWarnings(distance <- distw.pvclust(data,w1,method=method.dist,use.cor=use.cor))
     } 
 	
-	else if(TRUE) #row resampling is done in here. Disabled by default until I decide if it should be a parameter
+	else if(rowSample) #row resampling is done in here. Disabled by default until I decide if it should be a parameter
 	{
 	    smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
 

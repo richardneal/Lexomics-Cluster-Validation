@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , main = "",
-					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cutOffNumber=0, store=FALSE, storeChunks=FALSE)
+					input.transposed = TRUE, nboot = 100, runParallel = FALSE, clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeNumber=0, store=FALSE, storeChunks=FALSE, rowSample=FALSE)
 {
 	## List of possible distance metrics
 	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -47,10 +47,9 @@ myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize =
 	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object returned
 	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$seed.
 	
-	#cutOffNumber is a parameter to allow resampling by clades. Normally the resampling happens on a per chunk basis, meaning that the words in the new chunks created from the bootstraping are taken from the list of words in that chunk
-	#when resampling is done by clades each chunk inside of one of the clades used in the resampling draws from all the words in the clade when resampling is perfomed.  The cutOffNumber specifies what clades are used. The program will
-	#look at the first cutOffNumber clades that are created and use those as the clades to resample by, with and chunks not put into a clade by that point counting as being in their own unique clades. If cutOffNumber is set to 0, this
-	#effectively duplicates doing resampling on a per chunk basis.
+	#cladeNumber is a parameter to allow resampling by clades. Normally the resampling happens on a per chunk basis, meaning that the words in the new chunks created from the bootstraping are taken from the list of words in that chunk
+	#when resampling is done by clades each chunk inside of one of the clades used in the resampling draws from all the words in the clade when resampling is perfomed.  The cladeNumber specifies how many clades are used. The dendrogram
+	#will be broken up into cladeNumber clades using r's cutree function, and these clades are then the basis for the resampling
 	
 	#store is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the hclust objects created during
 	#the bootstrapping. The hclust obects will be stored in a list as the attribute store of the of the pvclust object returned
@@ -65,6 +64,11 @@ myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize =
 	#a number of sublists with there being one sublist for each r value pvclust used, and each sublist having all the new chunks created for that r value
 	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
 	#and only used on smaller test runs to see what kind of dendrograms are being created. 
+	
+	#rowSample is a boolean that if true allows the use of pvclusts original resampling method, where instead of basing the resampling around the number of times each individual word appeared in each individual clade, it builds
+	#the new data table by picking out a new set of words to use for all the chunks keeping the counts for the number of times those words appeared in the orignal text for those chunks. If storeRow is set to true then the 
+	#cladeNumber parameter will be ignored. WARNING. It is currently unclear whether this is actually a good method of resampling. By default this parameter is set to false and for now it is advised that it be left to false
+	#unless you have a specific reason for wanting to use it.
 	
 	#This function will return a list containing a modified pvclust object with a number of additional attributes. The storeCop attribute is a list of lists with each sublist containing the cophenetic correlation values
 	#for all the hclust objects generated for a particular r value. The first sublist contains the values for the first r value used and so on. There is also a seed attribute and a storeChunks attributes which are described
@@ -115,7 +119,7 @@ myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize =
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber, store=store, storeChunks=storeChunks)
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cladeNumber=cladeNumber, store=store, storeChunks=storeChunks, rowSample=rowSample)
 	}
 
 	else
@@ -128,13 +132,13 @@ myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize =
 		if(!sfIsRunning())
 		{
 			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cutOffNumber=cutOffNumber, store=store, storeChunks=storeChunks)			
+			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cladeNumber=cladeNumber, store=store, storeChunks=storeChunks, rowSample=rowSample)			
 		}
 		cl <- sfGetCluster()
 		sfSource( 'pvclust.R' )
 		sfSource( 'pvclust-internal.R' )
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cutOffNumber=cutOffNumber, store=store, storeChunks=storeChunks)
+		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cladeNumber=cladeNumber, store=store, storeChunks=storeChunks, rowSample=rowSample)
 	}
 	
 	print("Bootstrap runtime:")
@@ -176,12 +180,16 @@ myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize =
     print(Sys.time()-startSection);
 	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
-	#plot(pCluster)
 	
 	if(!is.null(filename))
 	{
 		plot(pCluster, filename)
 		dev.off()
+	}
+	
+	else
+	{
+		plot(pCluster)
 	}
 	
 	print("Total runtime:")
@@ -195,19 +203,19 @@ myCluster <- function(input.file, filename = NULL, textlabs = NULL , chunksize =
 	return(pCluster)
 }
 
-result <- myCluster("inputTestStandard.tsv", filename = "rowInputTestStandard.png", nboot=100, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose.tsv", filename = "inputTestTwoClose.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
 #print("Done 1")
-#result <- myCluster("inputTestStandard2.tsv", filename = "rowInputTestStandard2.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose2.tsv", filename = "inputTestTwoClose2.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
 #print("Done 2")
-#result <- myCluster("inputTestStandard3.tsv", filename = "rowInputTestStandard3.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose3.tsv", filename = "inputTestTwoClose3.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
 #print("Done 3")
-#result <- myCluster("inputTestStandard4.tsv", filename = "rowInputTestStandard4.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose4.tsv", filename = "inputTestTwoClose4.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
 #print("Done 4")
-#result <- myCluster("inputTestOneChunkApart.tsv", filename = "rowInputTestOneChunkApart.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose.tsv", filename = "rowinputTestTwoClose.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
 #print("Done 5")
-#result <- myCluster("inputTestOneChunkApart2.tsv", filename = "rowInputTestOneChunkApart2.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose2.tsv", filename = "rowinputTestTwoClose.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
 #print("Done 6")
-#result <- myCluster("inputTestOneChunkApart3.tsv", filename = "rowInputTestOneChunkApart3.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose3.tsv", filename = "rowinputTestTwoClose.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
 #print("Done 7")
-#result <- myCluster("inputTestOneChunkApart4.tsv", filename = "rowInputTestOneChunkApart4.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+#result <- myCluster("inputTestTwoClose4.tsv", filename = "rowinputTestTwoClose.png", nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
 #print("All Done")

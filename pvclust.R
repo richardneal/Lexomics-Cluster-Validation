@@ -1,6 +1,6 @@
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cutOffNumber=0, storeChunks=FALSE)
+                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cladeNumber=0, storeChunks=FALSE, rowSample=FALSE)
   {
 	if(is.null(seed)) #if no seed was specified use the system time as the seed which should effectively be random
 	{
@@ -29,7 +29,7 @@ pvclust <- function(data, method.hclust="average",
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	if(cutOffNumber == 0) #if resampling by chunk
+	if(cladeNumber == 0) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
 		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
@@ -38,8 +38,8 @@ pvclust <- function(data, method.hclust="average",
 	
 	else #there is a desired number of clades to resample by 
 	{
-		cladeChunkIn <- cutree(data.hclust, k = cutOffNumber)
-		cladeStarted <- rep(FALSE, cutOffNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
+		cladeChunkIn <- cutree(data.hclust, k = cladeNumber)
+		cladeStarted <- rep(FALSE, cladeNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
 												 #(ie had their first chunk already handled)
 	}
 	
@@ -94,7 +94,7 @@ pvclust <- function(data, method.hclust="average",
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
-					storeChunks=storeChunks) #do the actual bootstraping
+					storeChunks=storeChunks, rowSample=rowSample) #do the actual bootstraping
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
@@ -337,7 +337,7 @@ parPvclust <- function(cl, data, method.hclust="average",
                        method.dist="correlation", use.cor="pairwise.complete.obs",
                        nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, storeCop=FALSE,
                        weight=FALSE, normalize=TRUE,
-                       init.rand=TRUE, seed=NULL, cutOffNumber=0, storeChunks=FALSE)
+                       init.rand=TRUE, seed=NULL, cladeNumber=0, storeChunks=FALSE, rowSample=FALSE)
   {
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
 
@@ -377,7 +377,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	if(cutOffNumber == 0) #if resampling by chunk
+	if(cladeNumber == 0) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
 		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
@@ -386,8 +386,8 @@ parPvclust <- function(cl, data, method.hclust="average",
 	
 	else #there is a desired number of clades to resample by 
 	{
-		cladeChunkIn <- cutree(data.hclust, k = cutOffNumber)
-		cladeStarted <- rep(FALSE, cutOffNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
+		cladeChunkIn <- cutree(data.hclust, k = cladeNumber)
+		cladeStarted <- rep(FALSE, cladeNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
 												 #(ie had their first chunk already handled)
 	}
 	
@@ -448,7 +448,7 @@ parPvclust <- function(cl, data, method.hclust="average",
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
                        store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
-					   storeChunks=storeChunks) #do the bootstraping
+					   storeChunks=storeChunks, rowSample=rowSample) #do the bootstraping
     cat("Done.\n")
     
     mboot <- mlist[[1]]
