@@ -1,6 +1,6 @@
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cladeNumber=0, storeChunks=FALSE, rowSample=FALSE)
+                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cladeChunkIn=NULL, storeChunks=FALSE, rowSample=FALSE)
   {
 	if(is.null(seed)) #if no seed was specified use the system time as the seed which should effectively be random
 	{
@@ -16,9 +16,10 @@ pvclust <- function(data, method.hclust="average",
 
     #normalize data before getting distance matrix
     colSums <- apply(data, 2, sum) #each example/observation/object is one column, so find the sums of the columns
-	#print(colSums)
     denoms <- matrix(rep(colSums, dim(data)[1]), byrow=T, ncol=dim(data)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
     relFreq <- data/denoms
+	
+	#print(relFreq)
 
     #print(relFreq)
 	
@@ -27,9 +28,10 @@ pvclust <- function(data, method.hclust="average",
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
+	#print(distance)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	if(cladeNumber == 0) #if resampling by chunk
+	if(is.null(cladeChunkIn)) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
 		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
@@ -38,8 +40,7 @@ pvclust <- function(data, method.hclust="average",
 	
 	else #there is a desired number of clades to resample by 
 	{
-		cladeChunkIn <- cutree(data.hclust, k = cladeNumber)
-		cladeStarted <- rep(FALSE, cladeNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
+		cladeStarted <- rep(FALSE, max(cladeChunkIn)) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
 												 #(ie had their first chunk already handled)
 	}
 	
@@ -127,6 +128,9 @@ plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, floa
   if(is.null(main))
     main="Cluster dendrogram with AU/BP values (%)"
 
+  else
+    main <- paste(main, "Cluster dendrogram with AU/BP values (%)", sep = "\n")
+	
   if(is.null(sub))
     sub=paste("Cluster method: ", x$hclust$method, sep="")
  
@@ -337,7 +341,7 @@ parPvclust <- function(cl, data, method.hclust="average",
                        method.dist="correlation", use.cor="pairwise.complete.obs",
                        nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, storeCop=FALSE,
                        weight=FALSE, normalize=TRUE,
-                       init.rand=TRUE, seed=NULL, cladeNumber=0, storeChunks=FALSE, rowSample=FALSE)
+                       init.rand=TRUE, seed=NULL, cladeChunkIn=NULL, storeChunks=FALSE, rowSample=FALSE)
   {
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
 
@@ -377,7 +381,7 @@ parPvclust <- function(cl, data, method.hclust="average",
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	if(cladeNumber == 0) #if resampling by chunk
+	if(is.null(cladeChunkIn)) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
 		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
@@ -386,8 +390,7 @@ parPvclust <- function(cl, data, method.hclust="average",
 	
 	else #there is a desired number of clades to resample by 
 	{
-		cladeChunkIn <- cutree(data.hclust, k = cladeNumber)
-		cladeStarted <- rep(FALSE, cladeNumber) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
+		cladeStarted <- rep(FALSE, max(cladeChunkIn)) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
 												 #(ie had their first chunk already handled)
 	}
 	

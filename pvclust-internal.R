@@ -154,6 +154,8 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		#sect2Time <- sect2Time + (Sys.time()-startSection)
 	  }
 	  
+	  #print(bootStrapData)
+	  
 	  if(storeChunks) #if storing the new chunks
 	  {
 		stCh[[i]] <- bootStrapData
@@ -185,9 +187,13 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 
     if(storeCop)  #if storing cophenetic corelations, find and store the correlation now
     {
-		x.hclust
+		#x.hclust
         bootCop <- cophenetic(x.hclust) #get the cophenetic distance matrix
         stc[[i]] <- cor(copDistance, bootCop) #find the correlation between the cophenetic distance matrix and the distance matrix from the original data.
+		if(stc[[i]] < 0)
+		{
+			plot(x.hclust)
+		}
     }
   }
   cat("Done.\n")
