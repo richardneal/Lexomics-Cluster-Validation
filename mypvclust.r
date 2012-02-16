@@ -219,4 +219,4 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	return(pCluster)
 }
 
-result2 <- myCluster("noDup-10k-4merSmall.txt", filename = "test.png", main = "Dan nboot 100000, 10 R_ values",  nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
+result2 <- myCluster("danile-azarius.txt", nboot=10000, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")

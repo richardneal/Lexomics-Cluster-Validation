@@ -73,7 +73,7 @@ pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist, cladeChunkIn, chunkSize, storeChunks, rowSample=FALSE)
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist, cladeChunkIn, chunkSize, storeChunks, rowSample=FALSE, relFreq)
 {
   n     <- nrow(data) #get the number of rows (each row contains a single word)
   size  <- round(n*r, digits=0) #calculate the number of rows to resample
@@ -98,6 +98,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
   
   for(i in 1:nboot){
     if(weight && r>10) {  ## <- this part should be improved
+	  print("Code for weight resampling is not implemented currently. Look at code for nonresampled weight in boot.hclust for example of how to implement")
       w1 <- as.vector(rmultinom(1,size,w0)) # resampled weight
 	  if(normalize)
 	  {
@@ -131,30 +132,36 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	
 	else {
 		bootStrapData <- matrix(data = 0, nrow = nrow(data), ncol = ncol(data), dimnames=list(rownames(data),colnames(data))) #set up empty table to hold word counts for bootstrapped data
+		#bootStrapData2 <- matrix(data = 0, nrow = nrow(data), ncol = ncol(data), dimnames=list(rownames(data),colnames(data))) #set up empty table to hold word counts for bootstrapped data
 		
 		for(j in 1:ncol(data)){ #for each chunk
          size <- chunkSize[[j]] * r #calculate the number of words in the new bootstrapped chunk based on original size and r value
 									#size will equal sum(data[,i]) when r = 1
 									
-		 wordlistIndex <- cladeChunkIn[j] #get clade the chunk is in to know what sublist of the wordlist to use
+		 #wordlistIndex <- cladeChunkIn[j] #get clade the chunk is in to know what sublist of the wordlist to use
 		 
 		 #Sys.time()->startSection;
-         tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #create array of index values one for each word in the new bootstrapped chunk
+         #tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #create array of index values one for each word in the new bootstrapped chunk
 		 #sect1Time <- sect1Time + (Sys.time()-startSection)
 		 
 		 #Sys.time()->startSection;
-         counts <- wordlist[[wordlistIndex]][tmpindex] #convert the index values into the actual words
+         #counts <- wordlist[[wordlistIndex]][tmpindex] #convert the index values into the actual words
 		 
-		 counts <- (table(factor(counts, levels = row.names(bootStrapData)))) #get the number of times each word appears in the new sample
+		 #counts <- (table(factor(counts, levels = row.names(bootStrapData)))) #get the number of times each word appears in the new sample
+	
+		 counts <- rmultinom(1, size, relFreq[,j])
+		 #print(relFreq[,j])
 	
 		 #Sys.time()->startSection; 
 		 
 		 bootStrapData[,j] <- counts #store the word counts
+		 #bootStrapData2[,j] <- counts2
 
 		#sect2Time <- sect2Time + (Sys.time()-startSection)
 	  }
 	  
 	  #print(bootStrapData)
+	  #print(bootStrapData2)
 	  
 	  if(storeChunks) #if storing the new chunks
 	  {
@@ -190,10 +197,6 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		#x.hclust
         bootCop <- cophenetic(x.hclust) #get the cophenetic distance matrix
         stc[[i]] <- cor(copDistance, bootCop) #find the correlation between the cophenetic distance matrix and the distance matrix from the original data.
-		if(stc[[i]] < 0)
-		{
-			plot(x.hclust)
-		}
     }
   }
   cat("Done.\n")

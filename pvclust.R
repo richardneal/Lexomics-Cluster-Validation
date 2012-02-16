@@ -31,10 +31,6 @@ pvclust <- function(data, method.hclust="average",
 	#print(distance)
     data.hclust <- hclust(distance, method=method.hclust)
 	
-	plot(data.hclust)
-	print(data.hclust$merge)
-	print(data.hclust$labels)
-	
 	if(is.null(cladeChunkIn)) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
@@ -100,7 +96,7 @@ pvclust <- function(data, method.hclust="average",
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
                     method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
-					storeChunks=storeChunks, rowSample=rowSample) #do the actual bootstraping
+					storeChunks=storeChunks, rowSample=rowSample, relFreq = relFreq) #do the actual bootstraping
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
