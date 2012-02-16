@@ -206,6 +206,8 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 		plot(pCluster, main = main)
 	}
 	
+	#hist(copValues)
+	
 	print("Sort runtime:")
     print(Sys.time()-startTotal);
 	
@@ -217,13 +219,4 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	return(pCluster)
 }
 
-#result <- myCluster("inputTestTwoDistOpposite.tsv", filename = "dummy.png", main = "Two Distant Clades Opposite Intrachunk Resampling Dataset 1",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
-#result <- myCluster("inputTestTwoDistOpposite2.tsv", filename = "inputTestTwoDistOpposite2.png", main = "Two Distant Clades Opposite Intrachunk Resampling Dataset 2",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
-#result <- myCluster("inputTestTwoDistOpposite3.tsv", filename = "inputTestTwoDistOpposite3.png", main = "Two Distant Clades Opposite Intrachunk Resampling Dataset 3",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
-#result <- myCluster("inputTestTwoDistOpposite4.tsv", filename = "inputTestTwoDistOpposite4.png", main = "Two Distant Clades Opposite Intrachunk Resampling Dataset 4",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")
-#result <- myCluster("inputTestTwoDistOpposite.tsv", filename = "rowinputTestTwoDistOpposite.png", main = "Two Distant Clades Opposite Interrow Resampling Dataset 1",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
-#result <- myCluster("inputTestTwoDistOpposite2.tsv", filename = "rowinputTestTwoDistOpposite2.png", main = "Two Distant Clades Opposite Interrow Resampling Dataset 2",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
-#result <- myCluster("inputTestTwoDistOpposite3.tsv", filename = "rowinputTestTwoDistOpposite3.png", main = "Two Distant Clades Opposite Interrow Resampling Dataset 3",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
-#result <- myCluster("inputTestTwoDistOpposite4.tsv", filename = "rowinputTestTwoDistOpposite4.png", main = "Two Distant Clades Opposite Interrow Resampling Dataset 4",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
-result <- myCluster("danile-azarius.txt", filename = "dummy.png", main = "DanAz",  nboot=10, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")
-#result <- myCluster("danile-azarius.txt", filename = "dummy.png", main = "DanAz",  nboot=100000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", rowSample = TRUE)
+result2 <- myCluster("noDup-10k-4merSmall.txt", filename = "test.png", main = "Dan nboot 100000, 10 R_ values",  nboot=10, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 2, clusterType = "SOCK")

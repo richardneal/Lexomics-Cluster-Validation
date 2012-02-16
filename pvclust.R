@@ -31,6 +31,10 @@ pvclust <- function(data, method.hclust="average",
 	#print(distance)
     data.hclust <- hclust(distance, method=method.hclust)
 	
+	plot(data.hclust)
+	print(data.hclust$merge)
+	print(data.hclust$labels)
+	
 	if(is.null(cladeChunkIn)) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
@@ -55,6 +59,7 @@ pvclust <- function(data, method.hclust="average",
 
 	cladewordlist <- list() #list of words in each clade to use for resampling
 	
+
 	for(i in 1:ncol(data)) #for each chunk
 	{
 		if(!cladeStarted[cladeChunkIn[i]]) #if the chunk is the first chunk in it's clade
@@ -70,7 +75,7 @@ pvclust <- function(data, method.hclust="average",
 																													
 		}
 	}
-	
+
     #if finding the cophenetic correlations
     if(storeCop)
     {
@@ -343,6 +348,8 @@ parPvclust <- function(cl, data, method.hclust="average",
                        weight=FALSE, normalize=TRUE,
                        init.rand=TRUE, seed=NULL, cladeChunkIn=NULL, storeChunks=FALSE, rowSample=FALSE)
   {
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+  
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
 
     if((ncl <- length(cl)) < 2 || ncl > nboot) { #if nboot is less then the number of clusters
@@ -445,6 +452,10 @@ parPvclust <- function(cl, data, method.hclust="average",
     if((rem <- nboot %% ncl) > 0) #if there are some nboots remaining
     nbl[1:rem] <- lapply(nbl[1:rem], "+", 1) #add 1 nboot to each cluster upto the number of remaining bootstraps
 
+	print("Preboot runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+	
     cat("Multiscale bootstrap... ")
     
     mlist <- parLapply(cl, nbl, pvclust.node,
@@ -454,6 +465,10 @@ parPvclust <- function(cl, data, method.hclust="average",
 					   storeChunks=storeChunks, rowSample=rowSample) #do the bootstraping
     cat("Done.\n")
     
+	print("Boot runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+	
     mboot <- mlist[[1]]
 
     for(i in 2:ncl) { #merge all the data into a single object
@@ -468,6 +483,10 @@ parPvclust <- function(cl, data, method.hclust="average",
 
     result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
+	 print("Postboot runtime:")
+    print(Sys.time()-startSection);
+	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
+	
     return(result)
   }
 
