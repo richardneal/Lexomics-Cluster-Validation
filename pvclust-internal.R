@@ -73,7 +73,7 @@ pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
   }
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
-                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, wordlist, cladeChunkIn, chunkSize, storeChunks, rowSample=FALSE, relFreq)
+                        method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, cladeChunkIn, chunkSize, storeChunks, rowSample=FALSE, relFreq)
 {
   n     <- nrow(data) #get the number of rows (each row contains a single word)
   size  <- round(n*r, digits=0) #calculate the number of rows to resample
@@ -138,7 +138,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
          size <- chunkSize[[j]] * r #calculate the number of words in the new bootstrapped chunk based on original size and r value
 									#size will equal sum(data[,i]) when r = 1
 									
-		 #wordlistIndex <- cladeChunkIn[j] #get clade the chunk is in to know what sublist of the wordlist to use
+		 chunklistIndex <- cladeChunkIn[j] #get clade the chunk is in to know what sublist of the wordlist to use
 		 
 		 #Sys.time()->startSection;
          #tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #create array of index values one for each word in the new bootstrapped chunk
@@ -149,7 +149,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		 
 		 #counts <- (table(factor(counts, levels = row.names(bootStrapData)))) #get the number of times each word appears in the new sample
 	
-		 counts <- rmultinom(1, size, relFreq[,j])
+		 counts <- rmultinom(1, size, relFreq[,chunklistIndex])
 		 #print(relFreq[,j])
 	
 		 #Sys.time()->startSection; 

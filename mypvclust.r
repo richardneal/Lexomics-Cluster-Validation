@@ -89,7 +89,7 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	Sys.time()->startSection; #start timing the bootstraping
 	
 	#set inital values for certain variables
-	storeData <- NULL #st
+	storeData <- NULL #
 	
 	#change this for the text you'd like to input
 	input.data <- read.table(as.character(input.file), header=T,
@@ -219,4 +219,4 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	return(pCluster)
 }
 
-result2 <- myCluster("danile-azarius.txt", nboot=10000, distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")
+result2 <- myCluster("danile-azarius.txt", nboot=10000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", cladeChunkIn = c(1,2,2,2,1,1,1,3,3,3,3))

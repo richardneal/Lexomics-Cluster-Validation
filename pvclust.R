@@ -34,14 +34,21 @@ pvclust <- function(data, method.hclust="average",
 	if(is.null(cladeChunkIn)) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
-		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
-											   #but still exists in this case to allow both sampling functions to primarly use the same code
 	}
 	
 	else #there is a desired number of clades to resample by 
 	{
-		cladeStarted <- rep(FALSE, max(cladeChunkIn)) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
-												 #(ie had their first chunk already handled)
+		cladeCounts <- matrix(rep(0, max(cladeChunkIn * n)), ncol = max(cladeChunkIn), nrow = n)
+		for(i in 1:p) #for each chunk
+		{
+			curClade <- cladeChunkIn[i] #get which clade the chunk is in
+			cladeCounts[,curClade] <- cladeCounts[,curClade] + data[,i] #add counts to total	
+		}
+		
+		#convert to relative frequency
+		colSums <- apply(cladeCounts, 2, sum) #each clade is one column, so find the sums of the columns
+		denoms <- matrix(rep(colSums, dim(cladeCounts)[1]), byrow=T, ncol=dim(cladeCounts)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
+		relFreq <- cladeCounts/denoms
 	}
 	
 	chunkSize <- list() #stores total number of words in the chunk
@@ -51,25 +58,6 @@ pvclust <- function(data, method.hclust="average",
 	for(i in 1:ncol(data))
 	{
 		chunkSize[[i]] <- sum(data[,i]) #total number of words in the chunk is sum of the number of each individual word
-	}
-
-	cladewordlist <- list() #list of words in each clade to use for resampling
-	
-
-	for(i in 1:ncol(data)) #for each chunk
-	{
-		if(!cladeStarted[cladeChunkIn[i]]) #if the chunk is the first chunk in it's clade
-		{
-			cladewordlist[[cladeChunkIn[i]]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times) 
-			cladeStarted[cladeChunkIn[i]] <- TRUE #mark the the clade has been started
-		}
-		
-		else
-		{
-			cladewordlist[[cladeChunkIn[i]]] <- c(cladewordlist[[cladeChunkIn[i]]], (rep(rownames(data),data[,i]))) #gets all words in the chunk ordered by word (each word appears count times)
-																													#and adds them to all the other words in the clade
-																													
-		}
 	}
 
     #if finding the cophenetic correlations
@@ -95,7 +83,7 @@ pvclust <- function(data, method.hclust="average",
 	
     mboot <- lapply(r, boot.hclust, data=data, object.hclust=data.hclust, nboot=nboot,
                     method.dist=method.dist, use.cor=use.cor,
-                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
+                    method.hclust=method.hclust, store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
 					storeChunks=storeChunks, rowSample=rowSample, relFreq = relFreq) #do the actual bootstraping
 
     result <- pvclust.merge(data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
@@ -387,41 +375,30 @@ parPvclust <- function(cl, data, method.hclust="average",
 	if(is.null(cladeChunkIn)) #if resampling by chunk
 	{
 		cladeChunkIn <- 1:ncol(data) #holds which clade each chunk is in
-		cladeStarted <- rep(FALSE, ncol(data)) #create one entry in the cladeStarted array for each chunk since each chunk counts as a seperate clade. The table is primarly used when resampling by clade
-											   #but still exists in this case to allow both sampling functions to primarly use the same code
 	}
 	
 	else #there is a desired number of clades to resample by 
 	{
-		cladeStarted <- rep(FALSE, max(cladeChunkIn)) #since the first chunk in a clade needs to be handled differently then the rest when creating the wordlist create array to keep track of what clades have been started
-												 #(ie had their first chunk already handled)
+		cladeCounts <- matrix(rep(0, max(cladeChunkIn * n)), ncol = max(cladeChunkIn), nrow = n)
+		for(i in 1:p) #for each chunk
+		{
+			curClade <- cladeChunkIn[i] #get which clade the chunk is in
+			cladeCounts[,curClade] <- cladeCounts[,curClade] + data[,i] #add counts to total	
+		}
+		
+		#convert to relative frequency
+		colSums <- apply(cladeCounts, 2, sum) #each clade is one column, so find the sums of the columns
+		denoms <- matrix(rep(colSums, dim(cladeCounts)[1]), byrow=T, ncol=dim(cladeCounts)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
+		relFreq <- cladeCounts/denoms
 	}
 	
 	chunkSize <- list() #stores total number of words in the chunk
-	
-	print(cladeChunkIn)
 	
 	for(i in 1:ncol(data))
 	{
 		chunkSize[[i]] <- sum(data[,i]) #total number of words in the chunk is sum of the number of each individual word
 	}
 
-	cladewordlist <- list() #list of words in each clade to use for resampling
-	
-	for(i in 1:ncol(data)) #for each chunk
-	{
-		if(!cladeStarted[cladeChunkIn[i]]) #if the chunk is the first chunk in it's clade
-		{
-			cladewordlist[[cladeChunkIn[i]]] <- rep(rownames(data),data[,i]) #gets all words in the chunk ordered by word (each word appears count times) 
-			cladeStarted[cladeChunkIn[i]] <- TRUE #mark the the clade has been started
-		}
-		
-		else
-		{
-			cladewordlist[[cladeChunkIn[i]]] <- c(cladewordlist[[cladeChunkIn[i]]], (rep(rownames(data),data[,i]))) #gets all words in the chunk ordered by word (each word appears count times)
-																													#and adds them to all the other words in the clade																													
-		}
-	}
 	
     #if finding the cophenetic correlations
     if(storeCop)
@@ -457,8 +434,8 @@ parPvclust <- function(cl, data, method.hclust="average",
     mlist <- parLapply(cl, nbl, pvclust.node,
                        r=r, data=data, object.hclust=data.hclust, method.dist=method.dist,
                        use.cor=use.cor, method.hclust=method.hclust,
-                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, wordlist=cladewordlist, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
-					   storeChunks=storeChunks, rowSample=rowSample) #do the bootstraping
+                       store=store, weight=weight, storeCop=storeCop, copDistance=copDistance, normalize=normalize, cladeChunkIn=cladeChunkIn, chunkSize=chunkSize,
+					   storeChunks=storeChunks, rowSample=rowSample, relFreq = relFreq) #do the bootstraping
     cat("Done.\n")
     
 	print("Boot runtime:")
