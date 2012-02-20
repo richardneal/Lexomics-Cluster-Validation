@@ -11,7 +11,7 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , input.transposed = TRUE, nboot = 100, runParallel = FALSE,
-					clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, store=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1))
+					clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, store=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), height=800, width=800, labelFileName=NULL)
 {
 	#input.file is a character vector containing the name of the file to use as input.
 	
@@ -195,15 +195,24 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
 	
+	specialLabels = NULL
+	
+	if(!is.null(labelFileName)) #if a file of label names to highlight was specified
+	{
+		specialLabels <- scan(labelFileName, what = "character")
+	}
+	
 	if(!is.null(filename))
 	{
-		plot(pCluster, filename, main = main)
+		plot(pCluster, filename, main = main, height=height, width=width, specialLabels=specialLabels)
 		dev.off()
 	}
 	
 	else
 	{
-		plot(pCluster, main = main)
+		plot(pCluster, main = main, specialLabels=specialLabels)
+		par(ask=TRUE)
+		pvrect(pCluster)
 	}
 	
 	#hist(copValues)
@@ -219,4 +228,4 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	return(pCluster)
 }
 
-result2 <- myCluster("danile-azarius.txt", nboot=10000, distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", cladeChunkIn = c(1,2,2,2,1,1,1,3,3,3,3))
+result2 <- myCluster("danile-azariusAB.txt", labelFileName="TestLabels.txt", nboot=2, main="test", distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK")

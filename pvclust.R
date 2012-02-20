@@ -1,3 +1,5 @@
+currentNode = 1
+
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
                     nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cladeChunkIn=NULL, storeChunks=FALSE, rowSample=FALSE)
@@ -91,43 +93,184 @@ pvclust <- function(data, method.hclust="average",
     return(result) 
   }
 
+#gives the node its proper color
+lineColor <- function(x, colorOfNodes)
+{
+	attr(x, "nodePar") <- list("pch"  = NA, "lab.col"  = colorOfNodes[[currentNode]])
+	attr(x, "edgePar") <- list("col"  = colorOfNodes[[currentNode]])
+	assign("currentNode",  currentNode + 1, envir = .GlobalEnv)
+	
+	x #this line is necessary for some reason for the dendrapply function that calls this to work
+}
+
+#get the color for a given leaf based on it's label
+getColor <- function(label, specialLabels)
+{
+	if(label %in% specialLabels) #if label is one of the labels to watch out for
+	{
+		return("gold")
+	}
+
+	else if(substr(label,1,1) == "A")
+	{
+		return("red") 
+	}
+	
+	else
+	{
+		return("green")
+	}
+}
+
+#generates an list containing the color for every node in the tree
+generateLineColorList <- function(x, mergeTableRow, specialLabels)
+{
+	colorlist <- list()
+	color <- 0
+	
+	#step 1 check if there is at least one clade as a child
+	if(x$merge[mergeTableRow,1] > 0 || x$merge[mergeTableRow,2] > 0)
+	{
+		#we need to color the left half of the clade, get the left and right childern, then color the right half of the clade
+		if(x$merge[mergeTableRow,1] < 0) #if the left node is a chunk
+		{
+			leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels)
+			leftList <- list(leftColor)
+		}
+		
+		else
+		{
+			result <- generateLineColorList(x, x$merge[mergeTableRow,1], specialLabels=specialLabels)
+			leftColor <- result$color
+			leftList <- result$colorList
+		}
+		
+		if(x$merge[mergeTableRow,2] < 0) #if the right node is a chunk
+		{
+			rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels)
+			rightList <- list(rightColor)
+		}
+		
+		else
+		{
+			result <- generateLineColorList(x, x$merge[mergeTableRow,2], specialLabels=specialLabels)
+			rightColor <- result$color
+			rightList <- result$colorList
+		}
+		
+		if(leftColor == rightColor)
+		{
+			color <- leftColor
+		}
+		
+		else
+		{
+			color <- "blue" #blue 
+		}
+
+		if(x$merge[mergeTableRow,1] > 0  && x$merge[mergeTableRow,2] > 0) #if both childern are subclades
+		{
+			colorList <- c(color, leftList, color, rightList)
+		}
+		
+		else if(x$merge[mergeTableRow,1] > 0) #if the right child is a chunk
+		{
+			colorList <- c(color, leftList, rightList)
+		}
+		
+		else #if the left child is a chunk
+		{
+			colorList <- c(leftList, color, rightList)
+		}
+	}
+	
+	else #if neither child was a subclade
+	{
+		leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels)
+		rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels)
+		
+		if(leftColor == rightColor) #if the colors match
+		{
+			color <- leftColor
+		}
+		
+		else #else use color to indicate a mix
+		{
+			color <- "blue" #blue
+		}
+		colorList <- append(leftColor, rightColor)
+	}
+	
+	result <- list(colorList=colorList, color=color)
+	return(result)
+}
+  
 plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
-                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800,...)
+                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, ...)
 {
-  if(!is.null(filename))
-  {
-	png(filename, width=width, height=height)
-  }
 
-  else if(.Platform$OS.type == "windows")
+  if(.Platform$OS.type == "windows")
   {
-	windows(record=TRUE, width=width, height=height)
+  	if(!is.null(filename))
+  	{
+		png(filename, width=width, height=height)
+  	}
+	
+	else
+	{
+		windows(width=width, height=height)
+	}
   }
   
   else if(.Platform$OS.type == "unix")
   {
-	X11(width=floor(width/96), height=floor(height/96), type="Xlib") #X11 specifies window size in inches for some bizare reason
+	if(!is.null(filename))
+ 	{
+		png(filename, width=width, height=height, type="Xlib")
+	}
+
+	else
+	{
+		X11(width=floor(width/96), height=floor(height/96), type="Xlib") #X11 specifies window size in inches for some bizare reason
 									 #I'm not certain of the correct conversion factor but this is my best
 									 #guess 
-	#X11(type="Xlib")
+	}
   }
   
   if(is.null(main))
-    main="Cluster dendrogram with AU/BP values (%)"
+    main <- paste("Cluster dendrogram with AU/BP values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
 
   else
-    main <- paste(main, "Cluster dendrogram with AU/BP values (%)", sep = "\n")
+    main <- paste(main, "Cluster dendrogram with AU/BP values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
 	
   if(is.null(sub))
-    sub=paste("Cluster method: ", x$hclust$method, sep="")
+    #sub=paste("Cluster method: ", x$hclust$method, sep="")
  
   if(is.null(xlab))
-    xlab=paste("Distance: ", x$hclust$dist.method)  
+    #xlab=paste("Distance: ", x$hclust$dist.method)  
 
-  plot(x$hclust, main=main, sub=sub, xlab=xlab, col=col, cex=cex,
-       font=font, lty=lty, lwd=lwd, hang = -1, ...)
+  dend <- as.dendrogram(x$hclust) #convert the hclust object into a dendrogram object
+  colorList <- generateLineColorList(x$hclust, dim(x$hclust$merge)[1], specialLabels=specialLabels) #figure out what color each node should be
+  colorList <- c(0, colorList$colorList) #the first node checked be dendrapply doesn't seem to be part of the dendrogram so add a dummy value at the start of the list
+  
+  assign("currentNode",  1, envir = .GlobalEnv) #currentNode is a global variable to keep track of where in the tree we are
+  dend <- dendrapply(dend, lineColor, colorList) #add color to all the nodes in the tree
+
+  #find length of longest chunk name
+  maxL <- max( nchar( x$hclust$labels ))
+  
+	# set margins so there is just enough room for the labels
+	# The numbers measure margin size in line units
+	# The paramets are the size of the bottom,left,top,right margins
+	# On average a margin one line wide seems to have room for about 2.5 characters)
+	# so the margin on the bottom is set to the number of lines necessary to display
+	# the longest label if there was only 2 characters per line which leave's a decent buffer
+  par( mar=c((maxL / 2.0), 2.1, 4.1, 2.1))
+	
+  plot(dend, main=main, sub=sub, xlab="", col=col, cex=cex,
+       font=font, lty=lty, lwd=lwd, ...)
   if(print.pv)
     text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num)
 }
@@ -564,8 +707,8 @@ summary.msfit <- function(object, digits=3, ...) {
   cat(paste("Residual sum of squares: ", round(object$rss,digits=digits)),
       ",   p-value: ", round(object$pchi, digits=digits),
       " on ", object$df, " DF\n\n", sep="")
-}
 
+}
 seplot <- function(object, type=c("au", "bp"), identify=FALSE,
                    main=NULL, xlab=NULL, ylab=NULL, ...)
   {
