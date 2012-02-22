@@ -3,11 +3,14 @@
 use strict;
 use warnings;
 
+#print("yes");
+
 open DATATABLE, "noDup_10K_cull_merged_4mer.tsv" or die $!;
 open SAVE, "OrganismsToSave.txt" or die$!;
 open OUTPUT, ">", "NewGenomicsData.tsv" or die$!;
 
 my @toSave = <SAVE>;
+chomp(@toSave);
 
 my $firstLine = <DATATABLE>;
 print OUTPUT ($firstLine);
@@ -19,8 +22,10 @@ while (<DATATABLE>) {
 
         foreach(@toSave)
         {
+        	#print $_;
         	if(index($1,$_) != -1)
                 {
+                        print $_;
                 	print OUTPUT ($line);
                 }
         }
