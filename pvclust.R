@@ -104,26 +104,31 @@ lineColor <- function(x, colorOfNodes)
 }
 
 #get the color for a given leaf based on it's label
-getColor <- function(label, specialLabels)
+getColor <- function(label, specialLabels, metaTable = NULL)
 {
 	if(label %in% specialLabels) #if label is one of the labels to watch out for
 	{
 		return("gold")
 	}
 
-	else if(substr(label,1,1) == "A")
+	else if(is.null(metaTable))
 	{
-		return("red") 
+		return("black")
+	}
+	
+	else if(metaTable[label, 3] == "Bacteria")
+	{
+		return("green") 
 	}
 	
 	else
 	{
-		return("green")
+		return("red")
 	}
 }
 
 #generates an list containing the color for every node in the tree
-generateLineColorList <- function(x, mergeTableRow, specialLabels)
+generateLineColorList <- function(x, mergeTableRow, specialLabels, metaTable = NULL)
 {
 	colorlist <- list()
 	color <- 0
@@ -134,26 +139,26 @@ generateLineColorList <- function(x, mergeTableRow, specialLabels)
 		#we need to color the left half of the clade, get the left and right childern, then color the right half of the clade
 		if(x$merge[mergeTableRow,1] < 0) #if the left node is a chunk
 		{
-			leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels)
+			leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels, metaTable = metaTable)
 			leftList <- list(leftColor)
 		}
 		
 		else
 		{
-			result <- generateLineColorList(x, x$merge[mergeTableRow,1], specialLabels=specialLabels)
+			result <- generateLineColorList(x, x$merge[mergeTableRow,1], specialLabels=specialLabels, metaTable = metaTable)
 			leftColor <- result$color
 			leftList <- result$colorList
 		}
 		
 		if(x$merge[mergeTableRow,2] < 0) #if the right node is a chunk
 		{
-			rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels)
+			rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels, metaTable = metaTable)
 			rightList <- list(rightColor)
 		}
 		
 		else
 		{
-			result <- generateLineColorList(x, x$merge[mergeTableRow,2], specialLabels=specialLabels)
+			result <- generateLineColorList(x, x$merge[mergeTableRow,2], specialLabels=specialLabels, metaTable = metaTable)
 			rightColor <- result$color
 			rightList <- result$colorList
 		}
@@ -186,8 +191,8 @@ generateLineColorList <- function(x, mergeTableRow, specialLabels)
 	
 	else #if neither child was a subclade
 	{
-		leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels)
-		rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels)
+		leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels, metaTable = metaTable)
+		rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels, metaTable = metaTable)
 		
 		if(leftColor == rightColor) #if the colors match
 		{
@@ -208,7 +213,7 @@ generateLineColorList <- function(x, mergeTableRow, specialLabels)
 plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
-                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, ...)
+                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, metaTable = NULL, ...)
 {
 
   if(.Platform$OS.type == "windows")
@@ -252,7 +257,7 @@ plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, floa
     #xlab=paste("Distance: ", x$hclust$dist.method)  
 
   dend <- as.dendrogram(x$hclust) #convert the hclust object into a dendrogram object
-  colorList <- generateLineColorList(x$hclust, dim(x$hclust$merge)[1], specialLabels=specialLabels) #figure out what color each node should be
+  colorList <- generateLineColorList(x$hclust, dim(x$hclust$merge)[1], specialLabels=specialLabels, metaTable = metaTable) #figure out what color each node should be
   colorList <- c(0, colorList$colorList) #the first node checked be dendrapply doesn't seem to be part of the dendrogram so add a dummy value at the start of the list
   
   assign("currentNode",  1, envir = .GlobalEnv) #currentNode is a global variable to keep track of where in the tree we are

@@ -176,7 +176,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 		  bootStrapData <- bootStrapData/denoms
 	  }
 	  
-      suppressWarnings(distance  <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor)) #ceate the new distance matrix
+      suppressWarnings(distance  <- dist.pvclust(bootStrapData,method=method.dist,use.cor=use.cor)) #create the new distance matrix
     }
 	
     if(all(is.finite(distance))) { # check if distance is valid

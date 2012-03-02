@@ -11,7 +11,8 @@ source ( 'pvclust-internal.R' )
 
 myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , input.transposed = TRUE, nboot = 100, runParallel = FALSE,
-					clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, store=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), height=800, width=800, labelFileName=NULL)
+					clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, store=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
+					height=800, width=800, labelFileName=NULL, metadata = FALSE, plotOut = TRUE)
 {
 	#input.file is a character vector containing the name of the file to use as input.
 	
@@ -80,6 +81,15 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	#cladeNumber parameter will be ignored. WARNING. It is currently unclear whether this is actually a good method of resampling. By default this parameter is set to false and for now it is advised that it be left to false
 	#unless you have a specific reason for wanting to use it.
 	
+	#r lets you set the r values that will be used in the multiscale bootstrapping. The format is a vector/list containing all the r values to use
+	
+	#height and width set the height and width of the dendrogam plottted, when the dendrogram is saved to a file
+	
+	#labelFileName is the name of a file containing of a list of chunks to highlight in the dendrogram. The format is one chunk per line, and each line contains the exacat label for the chunk that should be
+	#highlighted
+	
+	#metadata is a boolean that states whether the file contains metadata along with the counts for different words. Currently this only works with one specific metadata format. 
+	
 	#This function will return a list containing a modified pvclust object with a number of additional attributes. The storeCop attribute is a list of lists with each sublist containing the cophenetic correlation values
 	#for all the hclust objects generated for a particular r value. The first sublist contains the values for the first r value used and so on. There is also a seed attribute and a storeChunks attributes which are described
 	#in the documentation for the parameters with the same names. If you want to see what the r values where they are stored as a list in the attribute r
@@ -95,6 +105,16 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	input.data <- read.table(as.character(input.file), header=T,
 		comment.char="", row.names=1, sep="\t", quote="")
 
+	metaTable <- NULL #assume there is no metadata
+		
+	#if there is metadata
+	if(metadata)
+	{
+		metaTable <- input.data[,-(1:136)] #put metadata into a seperate table
+		input.data <- input.data[,1:136] #keep the non metadata in the original table
+	}
+	
+		
 	#tTable <- ifelse( input.transposed, input.data, t( input.data ) )
 	if ( input.transposed ) #if the input
 		tTable <- t(input.data)
@@ -197,22 +217,25 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	
 	specialLabels = NULL
 	
-	if(!is.null(labelFileName)) #if a file of label names to highlight was specified
+	if(plotOut)
 	{
-		specialLabels <- scan(labelFileName, what = "character")
-	}
-	
-	if(!is.null(filename))
-	{
-		plot(pCluster, filename, main = main, height=height, width=width, specialLabels=specialLabels)
-		dev.off()
-	}
-	
-	else
-	{
-		plot(pCluster, main = main, specialLabels=specialLabels)
-		par(ask=TRUE)
-		pvrect(pCluster)
+		if(!is.null(labelFileName)) #if a file of label names to highlight was specified
+		{
+			specialLabels <- scan(labelFileName, what = "character")
+		}
+		
+		if(!is.null(filename))
+		{
+			plot(pCluster, filename, main = main, height=height, width=width, specialLabels=specialLabels, metaTable = metaTable)
+			dev.off()
+		}
+		
+		else
+		{
+			plot(pCluster, main = main, specialLabels=specialLabels, metaTable = metaTable)
+			par(ask=TRUE)
+			#pvrect(pCluster)
+		}
 	}
 	
 	#hist(copValues)
@@ -225,7 +248,59 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 		sfStop() #end the cluster
 	}
 	
+	pCluster <- c(pCluster, metaTable)
+	
 	return(pCluster)
 }
 
-result2 <- myCluster("fedpapers.tsv", nboot=10000, main="test", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, clusterNumber = 1, clusterType = "SOCK")
+varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "average" , input.transposed = TRUE, nboot = 10, runParallel = FALSE,
+					clusterNumber = 2, clusterType = 'SOCK', cladeChunkIn=NULL, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
+					metadata = FALSE, testRuns = 5)
+{
+		#do first test run
+		result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
+		clusterNumber = clusterNumber, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
+		
+		auvalues <- result$edge[,"au"]
+		bpvalues <- result$edge[,"bp"]
+
+		#create matrice for AU and BP values
+		allAU <- matrix(byrow=T, ncol=length(auvalues), nrow = testRuns)
+		allBP <- matrix(byrow=T, ncol=length(auvalues), nrow = testRuns)
+		
+		allAU[1,] <- auvalues
+		allBP[1,] <- bpvalues
+
+		#do rest of test runs
+		for(i in 2:testRuns)
+		{
+			result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
+			clusterNumber = clusterNumber, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
+			
+			auvalues <- result$edge[,"au"]
+			bpvalues <- result$edge[,"bp"]
+
+			#create matrice for AU and BP values
+			
+			allAU[i,] <- auvalues
+			allBP[i,] <- bpvalues
+		}
+		
+		minAUs <- apply(allAU, 2, min) #find the minimum au value in each column
+		maxAUs <- apply(allAU, 2, max) #find the maximum au value in each column
+		
+		auDiffs <- (maxAUs - minAUs) * 100 #get difference between min and max au values and convert to percentages (values were decimals)
+		
+		minBPs <- apply(allBP, 2, min) #find the minimum bp value in each column
+		maxBPs <- apply(allBP, 2, max) #find the maximum bp value in each column
+		
+		bpDiffs <- (maxBPs - minBPs) * 100 #get difference between min and max au values and convert to percentages (values were decimals)
+		
+		print(paste("Greatest AU Difference", max(auDiffs)), sep=" ")
+		print(paste("Greatest BP Difference", max(bpDiffs)), sep=" ")
+		
+}
+
+varianceTest("danile-azarius.txt", nboot = 50000, input.transposed = FALSE, runParallel = TRUE)
+
+#result2 <- myCluster("danile-azarius.txt", nboot=10, main="test2", distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", height = 3000, width = 30000, cladeChunkIn = c(1,2,3,1,2,3,1,2,3,1,100))
