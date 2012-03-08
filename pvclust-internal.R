@@ -227,11 +227,14 @@ pvclust.merge <- function(data, object.hclust, mboot, distance, seed){
   rl <- length(mboot) #get the number of r values
   ne <- length(pattern) #get the number of clades
   
-  edges.bp <- edges.cnt <- data.frame(matrix(rep(0,ne*rl),nrow=ne,ncol=rl)) #Creates two big table, with each row being a clade, and each column being a r value. A individual entry denotes either the number of times that clade occured or the bp value for that clade for a particular r value.
+  edges.bp <- edges.cnt <- data.frame(matrix(rep(0,ne*rl),nrow=ne,ncol=rl)) #Creates two big tables, with each row being a clade, and each column being a r value. A individual entry denotes either the number of times that clade occured or the bp value for that clade for a particular r value.
   row.names(edges.bp) <- pattern
   names(edges.cnt) <- paste("r", 1:rl, sep="")
 
-  for(j in 1:rl) {
+  #print(edges.bp)
+  #print(edges.cnt)
+  
+  for(j in 1:rl) { #for each r value
     edges.cnt[,j] <- as.vector(mboot[[j]]$edges.cnt) #holds the number of times each clade is formed for this particular r value
 	#print(edges.cnt[,j])
     edges.bp[,j]  <- edges.cnt[,j] / nboot[j]  #holds the number of times each clade is formed divided by the total number of bootstraps for this particular r value
@@ -260,7 +263,7 @@ pvclust.merge <- function(data, object.hclust, mboot, distance, seed){
                          v=v, c=cc, pchi=pchi)
 
   row.names(edges.pv) <- row.names(edges.cnt) <- 1:ne #names by default seem to just be numbers 1-n with n being number of clades
-
+  
   #combine all the data into a list
   result <- list(hclust=object.hclust, edges=edges.pv, count=edges.cnt,
                  msfit=ms.fitted, nboot=nboot, r=r, store=store, storeCop=storeCop, distance=distance, seed=seed, storeChunks=storeChunks)

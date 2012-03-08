@@ -573,8 +573,8 @@ parPvclust <- function(cl, data, method.hclust="average",
     if((rem <- nboot %% ncl) > 0) #if there are some nboots remaining
     nbl[1:rem] <- lapply(nbl[1:rem], "+", 1) #add 1 nboot to each cluster upto the number of remaining bootstraps
 
-	print("Preboot runtime:")
-    print(Sys.time()-startSection);
+	#print("Preboot runtime:")
+    #print(Sys.time()-startSection);
 	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 	
     cat("Multiscale bootstrap... ")
@@ -586,8 +586,8 @@ parPvclust <- function(cl, data, method.hclust="average",
 					   storeChunks=storeChunks, rowSample=rowSample, relFreq = relFreq) #do the bootstraping
     cat("Done.\n")
     
-	print("Boot runtime:")
-    print(Sys.time()-startSection);
+	#print("Boot runtime:")
+    #print(Sys.time()-startSection);
 	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 	
     mboot <- mlist[[1]]
@@ -604,8 +604,8 @@ parPvclust <- function(cl, data, method.hclust="average",
 
     result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
     
-	 print("Postboot runtime:")
-    print(Sys.time()-startSection);
+	#print("Postboot runtime:")
+    #print(Sys.time()-startSection);
 	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 	
     return(result)
@@ -634,12 +634,13 @@ msfit <- function(bp, r, nboot) {
 
   bp <- bp[use]; r <- r[use]; nboot <- nboot[use] #get only the bp that had values greater then 0 and less then 1
   #print(bp)
-  zz <- -qnorm(bp)
+  zz <- -qnorm(bp) #find where the bp values lie 
   #print(zz)
   vv <- ((1 - bp) * bp) / (dnorm(zz)^2 * nboot)
   a$use <- use; a$r <- r; a$zz <- zz
 
   X   <- cbind(sqrt(r), 1/sqrt(r)); dimnames(X) <- list(NULL, c("v","c"))
+  #print(X)
   fit <- lsfit(X, zz, 1/vv, intercept=FALSE)
   a$coef <- coef <- fit$coef
 
@@ -648,6 +649,7 @@ msfit <- function(bp, r, nboot) {
   h.au <- c(1, -1); h.bp <- c(1, 1)
   
   z.au <- drop(h.au %*% coef); z.bp <- drop(h.bp %*% coef) #%*% is matrix multiplication
+
   a$p["au"] <- pnorm(-z.au); a$p["bp"] <- pnorm(-z.bp)
   #print(z.au)
   #print(z.bp)
@@ -661,7 +663,6 @@ msfit <- function(bp, r, nboot) {
     a$pchi <- pchisq(a$rss, lower.tail=FALSE, df=a$df)
   }
   else a$pchi <- 1.0
-
   return(a)
 }
 

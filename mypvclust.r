@@ -9,15 +9,15 @@ source ( 'pvclust-internal.R' )
 # textlabs and chunksize must have same length and are assumed to correspond elementwise
 # so that first textlabs has first chunksize number of chunks
 
-myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL , chunksize = NULL ,
+myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs = NULL , chunksize = NULL ,
 					distMetric = "euclidean" , clustMethod = "average" , input.transposed = TRUE, nboot = 100, runParallel = FALSE,
 					clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, store=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
-					height=800, width=800, labelFileName=NULL, metadata = FALSE, plotOut = TRUE)
+					height=800, width=800, labelFileName=NULL, metadata = FALSE, plotOut = TRUE, logFileName = "")
 {
 	#input.file is a character vector containing the name of the file to use as input.
 	
-	#filename is a character vector used to name an output file. If filename is NULL the program will display a plot of the dendrogram. If filename is not null that plot will instead be saved as a png file named
-	#filename
+	#outputFilename is a character vector used to name an output file. If outputFilename is NULL the program will display a plot of the dendrogram. If outputFilename is not null that plot will instead be saved as a png file named
+	#outputFilename
 	
 	#main is a character vector that will be used as a title for the the dendrogram drawn. If main is left set to null no title will be added
 
@@ -143,8 +143,8 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 
 	copValues <- numeric(0)
 
-	print("Inital runtime:")
-    print(Sys.time()-startSection);
+	write("Inital runtime:", file = logFileName, append=TRUE)
+    write(format(Sys.time()-startSection, usetz=TRUE), file = logFileName, append=TRUE);
 	Sys.time()->startSection; #start timing the bootstraping
 	
 	if(!runParallel)
@@ -162,7 +162,7 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 																   
 		if(!sfIsRunning())
 		{
-			print("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
+			write("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
 			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=store, storeChunks=storeChunks, rowSample=rowSample, r=r)			
 		}
 		cl <- sfGetCluster()
@@ -171,8 +171,8 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=store, storeChunks=storeChunks, rowSample=rowSample, r=r)
 	}
 	
-	print("Bootstrap runtime:")
-    print(Sys.time()-startSection);
+	write("Bootstrap runtime:", file = logFileName, append=TRUE)
+    write(format(Sys.time()-startSection, usetz=TRUE), file = logFileName, append=TRUE);
 	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 
 	#find cophenetic correlation of orignal hclustering	
@@ -191,7 +191,7 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 		#copValues <- parallelSort(copValues)
 	}
 	
-	#print(copValues)
+	#write(copValues)
 	copValues <- unlist(copValues)
 	copValues <- sort(copValues) #sort the list
 	copSize <- length(copValues)
@@ -199,19 +199,19 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	lowerBound = (1-confidenceInterval) / 2 #to get the lower bound subtract the confidence interval from 1 to get the precentage outside the interval and divide by 2 to get the precentage below the interval
 	upperBound = 1 - lowerBound #subtract the lowerbound from 100% to get upper end of ranger
 	
-	print(paste("Original Cophenetic correlation", originalCor), sep=" ")
-	print(paste("Number of Cophenetic correlation values", length(copValues)), sep=" ")
-	print(paste("Minimum Cophenetic correlation", min(copValues)), sep=" ")
-    print(paste(lowerBound * 100, "% interval Copheneticcorrelation ", copValues[round(copSize * lowerBound)]), sep="")	
-    print(paste("Median Cophenetic correlation", median(copValues)), sep=" ")
-	print(paste(upperBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * upperBound)]), sep="")	
-    print(paste("Maximum Cophenetic correlation", max(copValues)), sep=" ")
+	write(paste("Original Cophenetic correlation", originalCor, sep=" "), file = logFileName, append=TRUE)
+	write(paste("Number of Cophenetic correlation values", length(copValues), sep=" "), file = logFileName, append=TRUE)
+	write(paste("Minimum Cophenetic correlation", min(copValues), sep=" "), file = logFileName, append=TRUE)
+    write(paste(lowerBound * 100, "% interval Copheneticcorrelation ", copValues[round(copSize * lowerBound)], sep=""), file = logFileName, append=TRUE)	
+    write(paste("Median Cophenetic correlation", median(copValues), sep=" "), file = logFileName, append=TRUE)
+	write(paste(upperBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * upperBound)], sep=""), file = logFileName, append=TRUE)	
+    write(paste("Maximum Cophenetic correlation", max(copValues), sep=" "), file = logFileName, append=TRUE)
 	
-	print(paste("Mean Cophenetic correlation", mean(copValues)), sep=" ")
-    print(paste("Standard Deviation Cophenetic correlation", sd(copValues)), sep=" ")
+	write(paste("Mean Cophenetic correlation", mean(copValues), sep=" "), file = logFileName, append=TRUE)
+    write(paste("Standard Deviation Cophenetic correlation", sd(copValues), sep=" "), file = logFileName, append=TRUE)
     
-	print("Cophenetic analysis runtime:")
-    print(Sys.time()-startSection);
+	write("Cophenetic analysis runtime:", file = logFileName, append=TRUE)
+    write(format(Sys.time()-startSection, usetz=TRUE), file = logFileName, append=TRUE);
 	
 	#find range between 2.5 % in and 97.5 % sorted make parameters use order/sort
 	
@@ -224,9 +224,9 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 			specialLabels <- scan(labelFileName, what = "character")
 		}
 		
-		if(!is.null(filename))
+		if(!is.null(outputFilename))
 		{
-			plot(pCluster, filename, main = main, height=height, width=width, specialLabels=specialLabels, metaTable = metaTable)
+			plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels, metaTable = metaTable)
 			dev.off()
 		}
 		
@@ -240,9 +240,9 @@ myCluster <- function(input.file, filename = NULL, main = NULL, textlabs = NULL 
 	
 	#hist(copValues)
 	
-	print("Sort runtime:")
-    print(Sys.time()-startTotal);
-	
+	write("Total runtime:", file = logFileName, append=TRUE)
+    write(format(Sys.time()-startTotal, usetz=TRUE), file = logFileName, append=TRUE);
+
 	if(runParallel)
 	{
 		sfStop() #end the cluster
@@ -296,11 +296,16 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		
 		bpDiffs <- (maxBPs - minBPs) * 100 #get difference between min and max au values and convert to percentages (values were decimals)
 		
-		print(paste("Greatest AU Difference", max(auDiffs)), sep=" ")
-		print(paste("Greatest BP Difference", max(bpDiffs)), sep=" ")
+		write(paste("Greatest AU Difference", max(auDiffs)), sep=" ")
+		write(paste("Greatest BP Difference", max(bpDiffs)), sep=" ")
 		
 }
 
-varianceTest("danile-azarius.txt", nboot = 50000, input.transposed = FALSE, runParallel = TRUE)
+#varianceTest("danile-azarius.txt", nboot = 50000, input.transposed = FALSE, runParallel = TRUE)
 
-#result2 <- myCluster("danile-azarius.txt", nboot=10, main="test2", distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", height = 3000, width = 30000, cladeChunkIn = c(1,2,3,1,2,3,1,2,3,1,100))
+logFile <- "runOutput.txt"
+write("Testing Start \n \n \n", file = logFile, append=TRUE)
+write("\n \n \nTest 1 DAN_AZ 1 Core 10 Nboot", file = logFile, append=TRUE)
+result2 <- myCluster("danile-azarius.txt", nboot=10, main="test2", distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", height = 3000, width = 30000, plot=FALSE, logFileName = logFile)
+write("\n \n \nTest 1 DAN_AZ 2 Core 10 Nboot", file = logFile, append=TRUE)
+result2 <- myCluster("danile-azarius.txt", nboot=10, main="test2", distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", height = 3000, width = 30000, plot=FALSE, logFileName = logFile)
