@@ -2,8 +2,9 @@ currentNode = 1
 
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
-                    nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, weight=FALSE, storeCop=FALSE, normalize=TRUE, seed=NULL, cladeChunkIn=NULL, storeChunks=FALSE, rowSample=FALSE)
+                    nboot=1000, r=seq(.5,1.4,by=.1), weight=FALSE, normalize=TRUE, seed=NULL, cladeChunkIn=NULL, rowSample=FALSE, store=FALSE, storeCop=FALSE, storeChunks=FALSE)
   {
+  
 	if(is.null(seed)) #if no seed was specified use the system time as the seed which should effectively be random
 	{
 		seed = as.numeric(Sys.time())
@@ -21,16 +22,12 @@ pvclust <- function(data, method.hclust="average",
     denoms <- matrix(rep(colSums, dim(data)[1]), byrow=T, ncol=dim(data)[2]) #compute matrix to divide current matrix by to normalize matrix. Each entry in a column is the sum of the column
     relFreq <- data/denoms
 	
-	#print(relFreq)
-
-    #print(relFreq)
-	
 	# hclust for original data
     METHODS <- c("ward", "single", "complete", "average", "mcquitty",
                  "median", "centroid")
     method.hclust <- METHODS[pmatch(method.hclust, METHODS)]
     distance <- dist.pvclust(relFreq, method=method.dist, use.cor=use.cor)
-	#print(distance)
+
     data.hclust <- hclust(distance, method=method.hclust)
 	
 	if(is.null(cladeChunkIn)) #if resampling by chunk
@@ -54,8 +51,6 @@ pvclust <- function(data, method.hclust="average",
 	}
 	
 	chunkSize <- list() #stores total number of words in the chunk
-	
-	#print(cladeChunkIn)
 	
 	for(i in 1:ncol(data))
 	{
@@ -111,7 +106,7 @@ getColor <- function(label, specialLabels, metaTable = NULL)
 		return("gold")
 	}
 
-	else if(is.null(metaTable))
+	else if(is.null(metaTable)) #if there is no metadata set the node to black. 
 	{
 		return("black")
 	}
@@ -121,106 +116,96 @@ getColor <- function(label, specialLabels, metaTable = NULL)
 		return("green") 
 	}
 	
-	else
+	else #if the node is not bacteria it must be archaea
 	{
 		return("red")
 	}
 }
 
 #generates an list containing the color for every node in the tree
+#rules are a node is red if it only contains Archeia, green if it only contains Bacteria, Gold if it was specially selected for highlighting, and blue if it contains mulitple of the previous categories'
+#The list is ordered in the order that nodes are visited by dendrapply.
 generateLineColorList <- function(x, mergeTableRow, specialLabels, metaTable = NULL)
 {
 	colorlist <- list()
-	color <- 0
 	
-	#step 1 check if there is at least one clade as a child
-	if(x$merge[mergeTableRow,1] > 0 || x$merge[mergeTableRow,2] > 0)
+	#color the left half of the clade
+	if(x$merge[mergeTableRow,1] < 0) #if the left node is a chunk determine the chunk's color
 	{
-		#we need to color the left half of the clade, get the left and right childern, then color the right half of the clade
-		if(x$merge[mergeTableRow,1] < 0) #if the left node is a chunk
-		{
-			leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels, metaTable = metaTable)
-			leftList <- list(leftColor)
-		}
-		
-		else
-		{
-			result <- generateLineColorList(x, x$merge[mergeTableRow,1], specialLabels=specialLabels, metaTable = metaTable)
-			leftColor <- result$color
-			leftList <- result$colorList
-		}
-		
-		if(x$merge[mergeTableRow,2] < 0) #if the right node is a chunk
-		{
-			rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels, metaTable = metaTable)
-			rightList <- list(rightColor)
-		}
-		
-		else
-		{
-			result <- generateLineColorList(x, x$merge[mergeTableRow,2], specialLabels=specialLabels, metaTable = metaTable)
-			rightColor <- result$color
-			rightList <- result$colorList
-		}
-		
-		if(leftColor == rightColor)
-		{
-			color <- leftColor
-		}
-		
-		else
-		{
-			color <- "blue" #blue 
-		}
-
-		if(x$merge[mergeTableRow,1] > 0  && x$merge[mergeTableRow,2] > 0) #if both childern are subclades
-		{
-			colorList <- c(color, leftList, color, rightList)
-		}
-		
-		else if(x$merge[mergeTableRow,1] > 0) #if the right child is a chunk
-		{
-			colorList <- c(color, leftList, rightList)
-		}
-		
-		else #if the left child is a chunk
-		{
-			colorList <- c(leftList, color, rightList)
-		}
+		leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels, metaTable = metaTable) #the color of the chunk
+		leftList <- list(leftColor) #list of the colors of all the nodes to the left
 	}
 	
-	else #if neither child was a subclade
+	else #if the left node is a clade recursively run the function on that clade
 	{
-		leftColor <- getColor(x$labels[-x$merge[mergeTableRow,1]], specialLabels=specialLabels, metaTable = metaTable)
-		rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels, metaTable = metaTable)
-		
-		if(leftColor == rightColor) #if the colors match
-		{
-			color <- leftColor
-		}
-		
-		else #else use color to indicate a mix
-		{
-			color <- "blue" #blue
-		}
-		colorList <- append(leftColor, rightColor)
+		result <- generateLineColorList(x, x$merge[mergeTableRow,1], specialLabels=specialLabels, metaTable = metaTable) 
+		leftColor <- result$color #the overall color of the subclade
+		leftList <- result$colorList #list of the colors of all the nodes to the left
+	}
+	
+	#color the right half of the clade
+	if(x$merge[mergeTableRow,2] < 0) #if the right node is a chunk determine the chunk's color
+	{
+		rightColor <- getColor(x$labels[-x$merge[mergeTableRow,2]], specialLabels=specialLabels, metaTable = metaTable) #the color of the chunk
+		rightList <- list(rightColor) #list of the colors of all the nodes to the right
+	}
+	
+	else #if the right node is a clade recursively run the function on that clade
+	{
+		result <- generateLineColorList(x, x$merge[mergeTableRow,2], specialLabels=specialLabels, metaTable = metaTable) 
+		rightColor <- result$color #the overall color of the subclade
+		rightList <- result$colorList #list of the colors of all the nodes to the right
+	}
+	
+	if(leftColor == rightColor) #check if the colors of the two subclades of the current clade are the same 
+	{
+		color <- leftColor #if so use the color they share
+	}
+	
+	else #if the colors are different the subclades have different contents
+	{
+		color <- "blue" #set the clade to blue to mark it's mixed contents
+	}
+
+	#the colors found need to be put together in the proper order. The current clade has one node for each of it's childern which contains a clade instead of just a chunk. 
+	#Those nodes need to be given the color of the current clade, but only if they exist. These nodes will appear in the list of colors before all the colors for the nodes in the respective
+	#subclades
+	
+	if(x$merge[mergeTableRow,1] > 0  && x$merge[mergeTableRow,2] > 0) #if both childern are subclades
+	{
+		colorList <- c(color, leftList, color, rightList) #both nodes in the current clade exist so add them into the color list
+	}
+	
+	else if(x$merge[mergeTableRow,1] > 0) #if the right child is a chunk
+	{
+		colorList <- c(color, leftList, rightList) #there is only a node for the left clade so add that to the color list
+	}
+	
+	else if(x$merge[mergeTableRow,2] > 0) #if the left child is a chunk
+	{
+		colorList <- c(leftList, color, rightList) #there is only a node for the right clade so add that to the color list
+	}
+	
+	else #both children are individual chunks
+	{
+	colorList <- append(leftColor, rightColor)
 	}
 	
 	result <- list(colorList=colorList, color=color)
 	return(result)
 }
   
+ #plots a pvclust object
 plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
-                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, metaTable = NULL, ...)
+                         main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, showBP=FALSE, ...)
 {
-
   if(.Platform$OS.type == "windows")
   {
   	if(!is.null(filename))
   	{
-		png(filename, width=width, height=height)
+		png(paste(filename, ".png", sep=""), width=width, height=height)
   	}
 	
 	else
@@ -233,7 +218,7 @@ plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, floa
   {
 	if(!is.null(filename))
  	{
-		png(filename, width=width, height=height, type="Xlib")
+		png(paste(filename, ".png", sep=""), width=width, height=height, type="Xlib")
 	}
 
 	else
@@ -244,18 +229,34 @@ plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, floa
 	}
   }
   
-  if(is.null(main))
-    main <- paste("Cluster dendrogram with AU/BP values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
+  metaTable <- x$metaTable[[1]] #get metadata out of pvclust object
+  
+  #The line describing the dendrogram needs to be changed depending on if bp values are being displayed or not
+  
+  if(!showBP) #if not showing bp values
+  {
+	  if(is.null(main))
+		main <- paste("Cluster dendrogram with AU values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
 
-  else
-    main <- paste(main, "Cluster dendrogram with AU/BP values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
-	
+	  else
+		main <- paste(main, "Cluster dendrogram with AU values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
+  }
+  
+  else #if not showing bp values
+  {
+	  if(is.null(main))
+		main <- paste("Cluster dendrogram with AU/BP values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
+
+	  else
+		main <- paste(main, "Cluster dendrogram with AU/BP values (%)", paste("Cluster method: ", x$hclust$method, sep=""), paste("Distance: ", x$hclust$dist.method), sep = "\n")
+  }
+
   if(is.null(sub))
     #sub=paste("Cluster method: ", x$hclust$method, sep="")
  
   if(is.null(xlab))
     #xlab=paste("Distance: ", x$hclust$dist.method)  
-
+	
   dend <- as.dendrogram(x$hclust) #convert the hclust object into a dendrogram object
   colorList <- generateLineColorList(x$hclust, dim(x$hclust$merge)[1], specialLabels=specialLabels, metaTable = metaTable) #figure out what color each node should be
   colorList <- c(0, colorList$colorList) #the first node checked be dendrapply doesn't seem to be part of the dendrogram so add a dummy value at the start of the list
@@ -266,22 +267,27 @@ plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, floa
   #find length of longest chunk name
   maxL <- max( nchar( x$hclust$labels ))
   
-	# set margins so there is just enough room for the labels
-	# The numbers measure margin size in line units
-	# The paramets are the size of the bottom,left,top,right margins
-	# On average a margin one line wide seems to have room for about 2.5 characters)
-	# so the margin on the bottom is set to the number of lines necessary to display
-	# the longest label if there was only 2 characters per line which leave's a decent buffer
+  # set margins so there is just enough room for the labels
+  # The numbers measure margin size in line units
+  # The paramets are the size of the bottom,left,top,right margins
+  # On average a margin one line wide seems to have room for about 2.5 characters)
+  # so the margin on the bottom is set to the number of lines necessary to display
+  # the longest label if there was only 2 characters per line which leave's a decent buffer
   par( mar=c((maxL / 2.0), 2.1, 4.1, 2.1))
 	
   plot(dend, main=main, sub=sub, xlab="", col=col, cex=cex,
        font=font, lty=lty, lwd=lwd, ...)
   if(print.pv)
-    text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num)
+    text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num, showBP = showBP)
+	
+  if(!is.null(filename)) #if writing to a file close the connection
+  {
+	dev.off()
+  }
 }
 
 #this function handles the actual writing of the au and bp labels on the plot
-text.pvclust <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL, font=NULL, ...)
+text.pvclust <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL, font=NULL, showBP = FALSE, ...)
 {
   axes <- hc2axes(x$hclust)
   usr  <- par()$usr; wid <- usr[4] - usr[3]
@@ -293,8 +299,11 @@ text.pvclust <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL,
   rn[length(rn)] <- "edge #"
   a <- text(x=axes[,1], y=axes[,2] + float * wid, au,
             col=col[1], pos=2, offset=.3, cex=cex, font=font)
+  if(showBP)
+  {
   a <- text(x=axes[,1], y=axes[,2] + float * wid, bp,
             col=col[2], pos=4, offset=.3, cex=cex, font=font)
+  }
   if(print.num)
     a <- text(x=axes[,1], y=axes[,2], rn,
               col=col[3], pos=1, offset=.3, cex=cex, font=font)
@@ -476,17 +485,16 @@ pvpick <- function(x, alpha=0.95, pv="au", type="geq", max.only=TRUE)
 
 parPvclust <- function(cl, data, method.hclust="average",
                        method.dist="correlation", use.cor="pairwise.complete.obs",
-                       nboot=1000, r=seq(.5,1.4,by=.1), store=FALSE, storeCop=FALSE,
+                       nboot=1000, r=seq(.5,1.4,by=.1),
                        weight=FALSE, normalize=TRUE,
-                       init.rand=TRUE, seed=NULL, cladeChunkIn=NULL, storeChunks=FALSE, rowSample=FALSE)
+                       init.rand=TRUE, seed=NULL, cladeChunkIn=NULL, rowSample=FALSE, store=FALSE, storeCop=FALSE, storeChunks=FALSE)
   {
-	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
-  
+
     if(!(require(snow))) stop("Package snow is required for parPvclust.")
 
     if((ncl <- length(cl)) < 2 || ncl > nboot) { #if nboot is less then the number of clusters
       warning("Too small value for nboot: non-parallel version is executed.")
-      return(pvclust(data,method.hclust,method.dist,use.cor,nboot,r,store)) #add extra parameters
+	  return(pvclust(data,method.hclust,method.dist,use.cor,nboot,r,weight,normalize,NULL,cladeChunkIn,rowSample,store,storeCop,storeChunks))
     }
 
     copDistance <- NULL #set to null in case cophenetic correlations aren't beening looked for
@@ -573,10 +581,6 @@ parPvclust <- function(cl, data, method.hclust="average",
     if((rem <- nboot %% ncl) > 0) #if there are some nboots remaining
     nbl[1:rem] <- lapply(nbl[1:rem], "+", 1) #add 1 nboot to each cluster upto the number of remaining bootstraps
 
-	#print("Preboot runtime:")
-    #print(Sys.time()-startSection);
-	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
-	
     cat("Multiscale bootstrap... ")
     
     mlist <- parLapply(cl, nbl, pvclust.node,
@@ -586,9 +590,6 @@ parPvclust <- function(cl, data, method.hclust="average",
 					   storeChunks=storeChunks, rowSample=rowSample, relFreq = relFreq) #do the bootstraping
     cat("Done.\n")
     
-	#print("Boot runtime:")
-    #print(Sys.time()-startSection);
-	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 	
     mboot <- mlist[[1]]
 
@@ -603,10 +604,6 @@ parPvclust <- function(cl, data, method.hclust="average",
     }
 
     result <- pvclust.merge( data=data, object.hclust=data.hclust, mboot=mboot, distance=distance, seed=seed)
-    
-	#print("Postboot runtime:")
-    #print(Sys.time()-startSection);
-	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
 	
     return(result)
   }
@@ -634,23 +631,23 @@ msfit <- function(bp, r, nboot) {
 
   bp <- bp[use]; r <- r[use]; nboot <- nboot[use] #get only the bp that had values greater then 0 and less then 1
   #print(bp)
-  zz <- -qnorm(bp) #find where the bp values lie 
+  zz <- -qnorm(bp) #find where the bp values lie phi inverse
   #print(zz)
   vv <- ((1 - bp) * bp) / (dnorm(zz)^2 * nboot)
   a$use <- use; a$r <- r; a$zz <- zz
 
   X   <- cbind(sqrt(r), 1/sqrt(r)); dimnames(X) <- list(NULL, c("v","c"))
   #print(X)
-  fit <- lsfit(X, zz, 1/vv, intercept=FALSE)
-  a$coef <- coef <- fit$coef
+  fit <- lsfit(X, zz, 1/vv, intercept=FALSE) #fit the curve
+  a$coef <- coef <- fit$coef #get the coefficents
 
   #print(coef)
   
   h.au <- c(1, -1); h.bp <- c(1, 1)
   
-  z.au <- drop(h.au %*% coef); z.bp <- drop(h.bp %*% coef) #%*% is matrix multiplication
+  z.au <- drop(h.au %*% coef); z.bp <- drop(h.bp %*% coef) #%*% is matrix multiplication  au is v - c bp is v + c
 
-  a$p["au"] <- pnorm(-z.au); a$p["bp"] <- pnorm(-z.bp)
+  a$p["au"] <- pnorm(-z.au); a$p["bp"] <- pnorm(-z.bp) #phi
   #print(z.au)
   #print(z.bp)
   

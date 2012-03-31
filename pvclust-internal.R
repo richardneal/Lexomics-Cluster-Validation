@@ -66,11 +66,11 @@ hc2split <- function(x)
   }
 
 pvclust.node <- function(x, r,...) #this does the bootstraping for a single node
-  {
-#    require(pvclust)
+{
+
     mboot.node <- lapply(r, boot.hclust, nboot=x, ...) #do the bootstraping once for each r value
     return(mboot.node)
-  }
+}
 
 boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
                         method.hclust, nboot, store, weight=F, storeCop, copDistance, normalize, cladeChunkIn, chunkSize, storeChunks, rowSample=FALSE, relFreq)
@@ -113,11 +113,6 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	    smpl <- sample(1:n, size, replace=TRUE) #creates a index vector with each element being the index of the row chosen
 
 		bootStrapData = data[smpl,] #get the new bootStrap values using the index vector
-
-		#print(data)
-		#print(smpl)
-		#print(bootStrapData)
-		#print(dim(bootStrapData))
 		
 		if(normalize)
 		{
@@ -140,29 +135,12 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 									
 		 chunklistIndex <- cladeChunkIn[j] #get clade the chunk is in to know what sublist of the wordlist to use
 		 
-		 #Sys.time()->startSection;
-         #tmpindex <- sample(1:length(wordlist[[wordlistIndex]]), size, replace = TRUE) #create array of index values one for each word in the new bootstrapped chunk
-		 #sect1Time <- sect1Time + (Sys.time()-startSection)
-		 
-		 #Sys.time()->startSection;
-         #counts <- wordlist[[wordlistIndex]][tmpindex] #convert the index values into the actual words
-		 
-		 #counts <- (table(factor(counts, levels = row.names(bootStrapData)))) #get the number of times each word appears in the new sample
-	
 		 counts <- rmultinom(1, size, relFreq[,chunklistIndex])
-		 #print(relFreq[,j])
-	
-		 #Sys.time()->startSection; 
-		 
-		 bootStrapData[,j] <- counts #store the word counts
-		 #bootStrapData2[,j] <- counts2
 
-		#sect2Time <- sect2Time + (Sys.time()-startSection)
+		 bootStrapData[,j] <- counts #store the word counts
 	  }
 	  
-	  #print(bootStrapData)
-	  #print(bootStrapData2)
-	  
+
 	  if(storeChunks) #if storing the new chunks
 	  {
 		stCh[[i]] <- bootStrapData
@@ -206,7 +184,7 @@ boot.hclust <- function(r, data, object.hclust, method.dist, use.cor,
 	warning(paste("inappropriate distance matrices are omitted in computation: r = ", r), call.=FALSE)
 
   boot <- list(edges.cnt=edges.cnt, method.dist=method.dist, use.cor=use.cor,
-               method.hclust=method.hclust, nboot=nboot, size=size, r=r, store=st, storeCop=stc, storeChunks=stCh) #store all the data in a list
+               method.hclust=method.hclust, nboot=nboot, size=size, r=r, storehClust=st, storeCop=stc, storeChunks=stCh) #store all the data in a list
   class(boot) <- "boot.hclust"
 
   return(boot) #return that list to the function call
@@ -220,7 +198,7 @@ pvclust.merge <- function(data, object.hclust, mboot, distance, seed){
   #get the following data out of the list 
   r     <- unlist(lapply(mboot,"[[","r"))
   nboot <- unlist(lapply(mboot,"[[","nboot"))
-  store <- lapply(mboot,"[[", "store")
+  storehClust <- lapply(mboot,"[[", "storehClust")
   storeCop <-lapply(mboot,"[[", "storeCop")
   storeChunks <- lapply(mboot,"[[", "storeChunks")
   
@@ -266,7 +244,7 @@ pvclust.merge <- function(data, object.hclust, mboot, distance, seed){
   
   #combine all the data into a list
   result <- list(hclust=object.hclust, edges=edges.pv, count=edges.cnt,
-                 msfit=ms.fitted, nboot=nboot, r=r, store=store, storeCop=storeCop, distance=distance, seed=seed, storeChunks=storeChunks)
+                 msfit=ms.fitted, nboot=nboot, r=r, storehClust=storehClust, storeCop=storeCop, distance=distance, seed=seed, storeChunks=storeChunks)
 
   class(result) <- "pvclust"
   return(result) #return that list

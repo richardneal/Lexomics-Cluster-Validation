@@ -9,10 +9,10 @@ source ( 'pvclust-internal.R' )
 # textlabs and chunksize must have same length and are assumed to correspond elementwise
 # so that first textlabs has first chunksize number of chunks
 
-myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs = NULL , chunksize = NULL ,
-					distMetric = "euclidean" , clustMethod = "average" , input.transposed = TRUE, nboot = 100, runParallel = FALSE,
-					clusterNumber = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, store=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
-					height=800, width=800, labelFileName=NULL, metadata = FALSE, plotOut = TRUE, logFileName = "")
+myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs = NULL , chunksize = NULL , labelFileName = NULL, 
+					distMetric = "euclidean" , clustMethod = "average" , use.cor="pairwise.complete.obs", input.transposed = TRUE, nboot = 100, runParallel = FALSE,
+					numCPUs = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, storehClust=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
+					height=800, width=800, highlightFileName=NULL, metadata = FALSE, plotOut = TRUE, logFileName = "")
 {
 	#input.file is a character vector containing the name of the file to use as input.
 	
@@ -35,7 +35,7 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	#so the total number of new hclust objects generated is 10*nboot
 	
 	#runParallel sets whether the program does the bootstrapping on a single core or runs it in parallel. If runParallel is false the code is executed on a single processer and there are no special requirements for 
-	#being able to run the code. The clusterNumber, and clusterType parameters will also be ignored. If runParallel is set to true, the snow and snowfall librarys must be installed and the clusterNumber,
+	#being able to run the code. The numCPUs, and clusterType parameters will also be ignored. If runParallel is set to true, the snow and snowfall librarys must be installed and the numCPUs,
     #and clusterType parameters will be used. Currently there is one other discrepency that needs to be fixed. When runParallel is false each run will produce a new set of results, and when runParallel is true, each run will
 	#produce the same set of results due to parpvclust giving each processor a fixed seed.
 	
@@ -43,15 +43,15 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	#which requries that the computer has a MPI implementation, installed, properly set up and running, as well as having the r package rmpi installed. PVM (Parallel Virtual Machine) and NWS(networkspaces) 
 	#are theoretically supported but not tested. See the snow/snowfall documentation for more information about the necessary steps to use those.
 	
-	#clusterNumber is the number of processers to use in the cluster. If the clusterType is set to SOCK all the processers used will be from the machine running this code. If clusterType is set to MPI the processers used 
-	#can come from any machine mpi is set up to access. If clusterNumber is set to a value greater then the number of processers actually available the code will still run, but some processers will end up running multiple instances
+	#numCPUs is the number of processers to use in the cluster. If the clusterType is set to SOCK all the processers used will be from the machine running this code. If clusterType is set to MPI the processers used 
+	#can come from any machine mpi is set up to access. If numCPUs is set to a value greater then the number of processers actually available the code will still run, but some processers will end up running multiple instances
 	#of the program which will increase the total run time.
 	
 	#confidence interval is the confidence interval for the cophenetic correlations given as a percent entered in decimal form. The program will give the output the cophenetic correlations at the lower and upper ends of the interval. 
 	#The lower bound can be computed as (100% - confidence interval) / 2 and the upper bound as (100% - lower bound). For example if the confidence interval is 95% the lowerbound will be 2.5% and the upper bound 97.5%
 
 	#the seed parameter is used to set the seed used for random number generation. By default seed is set to null which will cause the program to use a random seed. If a value for seed is given the program will instead use that
-	#value as the seed for random number generation. When not running in parallel a single value should be entered for seed. When running in parallel a list the same length as clusterNumber should be entered which each item in the list
+	#value as the seed for random number generation. When not running in parallel a single value should be entered for seed. When running in parallel a list the same length as numCPUs should be entered which each item in the list
 	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object returned
 	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$seed.
 	
@@ -62,11 +62,11 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	#If this parameter is left to null the program will resample intraclade instead.
 	#WARNING. It is up to the user to make sure the clades defined by this parameter make sense. It is quite possible to input clades that don't exist in the actual dendrogram which may produce weird results. T\
 	
-	#store is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the hclust objects created during
-	#the bootstrapping. The hclust obects will be stored in a list as the attribute store of the of the pvclust object returned
-	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$store. The format of store is as a list containing a number of sublists with there being one sublist for each
+	#storehClust is a boolean that sets pvclusts store parameter. If storehClust is set to true then the result objected returned by the function will contain a storehClust attribute which is a list holding all the hclust objects created during
+	#the bootstrapping. The hclust obects will be stored in a list as the attribute storehClust of the of the pvclust object returned
+	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$storehClust. The format of storehClust is as a list containing a number of sublists with there being one sublist for each
 	#r value pvclust used, and each sublist having all the hclust objects created for that r value
-	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
+	#WARNING: setting storehClust to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
 	#and only used on smaller test runs to see what kind of dendrograms are being created. 
 	
 	#storeChunks is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the new chunks created during
@@ -77,7 +77,7 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	#and only used on smaller test runs to see what kind of dendrograms are being created. 
 	
 	#rowSample is a boolean that if true allows the use of pvclusts original resampling method, where instead of basing the resampling around the number of times each individual word appeared in each individual clade, it builds
-	#the new data table by picking out a new set of words to use for all the chunks keeping the counts for the number of times those words appeared in the orignal text for those chunks. If storeRow is set to true then the 
+	#the new data table by picking out a new set of words to use for all the chunks keeping the counts for the number of times those words appeared in the orignal text for those chunks. If rowSample is set to true then the 
 	#cladeNumber parameter will be ignored. WARNING. It is currently unclear whether this is actually a good method of resampling. By default this parameter is set to false and for now it is advised that it be left to false
 	#unless you have a specific reason for wanting to use it.
 	
@@ -85,7 +85,7 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	
 	#height and width set the height and width of the dendrogam plottted, when the dendrogram is saved to a file
 	
-	#labelFileName is the name of a file containing of a list of chunks to highlight in the dendrogram. The format is one chunk per line, and each line contains the exacat label for the chunk that should be
+	#highlightFileName is the name of a file containing of a list of chunks to highlight in the dendrogram. The format is one chunk per line, and each line contains the exacat label for the chunk that should be
 	#highlighted
 	
 	#metadata is a boolean that states whether the file contains metadata along with the counts for different words. Currently this only works with one specific metadata format. 
@@ -102,8 +102,7 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	storeData <- NULL #
 	
 	#change this for the text you'd like to input
-	input.data <- read.table(as.character(input.file), header=T,
-		comment.char="", row.names=1, sep="\t", quote="")
+	input.data <- read.table(as.character(input.file), header=T, comment.char="", row.names=1, sep="\t", quote="")
 
 	metaTable <- NULL #assume there is no metadata
 		
@@ -114,32 +113,40 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 		input.data <- input.data[,1:136] #keep the non metadata in the original table
 	}
 	
-		
-	#tTable <- ifelse( input.transposed, input.data, t( input.data ) )
 	if ( input.transposed ) #if the input
 		tTable <- t(input.data)
 	else
 		tTable <- ( input.data )
 
-    #transpose data so it matches format pvclust expects
-    #tTable <- t(tTable)
 
-	#Old code to change the labels of the chunks. Hasn't been used in a while and probally doesn't work anymore with all the changes since it was written. Still leaving it in
-	#as a starting point in case someone decides it should be reimplemented.
-	#if( !is.null(textlabs) && !is.null(chunksize)) {
-	#	if(length(textlabs) != length(chunksize)) stop("number of texts and corresponding chunk numbers must match")
-	#	else {# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
-	#			L <- length(chunksize)
-	#			temp <- NULL
-	#			for(i in 1:L) {
-	#				for(k in 1:chunksize[i]){
-	#					temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
-	#		}
-	#			}
-	#	row.names(relFreq) <- temp
-	#}
-	#}
-	# else 0
+	if( !is.null(textlabs) && !is.null(chunksize)) 
+	{
+		if(length(textlabs) != length(chunksize)) 
+		{
+				stop("number of texts and corresponding chunk numbers must match")
+		}
+		else 
+		{		# check that sum(chunksize) == dim(relFreq)[1] , total number of chunks equals number of rows in relFreq
+				L <- length(chunksize)
+				temp <- NULL
+				for(i in 1:L) 
+				{
+					for(k in 1:chunksize[i])
+					{
+						temp <- c(temp,paste(textlabs[i],as.character(k),sep=""))
+					}
+				}
+				#print(temp)
+				colnames(tTable) <- temp
+		}
+	}
+	
+	if(!is.null(labelFileName)) #if a file of label names to highlight was specified
+	{
+		chunkLabels <- scan(labelFileName, what = "character", sep = "\n")
+		colnames(tTable) <- chunkLabels
+	}
+
 
 	copValues <- numeric(0)
 
@@ -149,7 +156,7 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	
 	if(!runParallel)
 	{
-		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=store, storeChunks=storeChunks, rowSample=rowSample, r=r)
+		pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, use.cor = use.cor, storeCop=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=storehClust, storeChunks=storeChunks, rowSample=rowSample, r=r)
 	}
 
 	else
@@ -157,20 +164,25 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 		#ADD MORE ERROR CHECKING
 		library(snowfall) #I will write more about next line missing ip argument
 		
-		sfInit(parallel=TRUE, cpus=clusterNumber,type=clusterType) #This creates the cluster. If clusterType is SOCK all the processors will be taken from the current computer. If the type is MPI, the processors can be taken
+		sfInit(parallel=TRUE, cpus=numCPUs,type=clusterType) #This creates the cluster. If clusterType is SOCK all the processors will be taken from the current computer. If the type is MPI, the processors can be taken
 		                                                           #from any computer running an MPI implementation, and the MPI program will handle choosing what processors to use
 																   
 		if(!sfIsRunning())
 		{
 			write("Error. Cluster not created successfully. Will use nonparallel version of pvclust instead")
-			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=store, storeChunks=storeChunks, rowSample=rowSample, r=r)			
+			pCluster <- pvclust(tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, use.cor = use.cor, storeCop=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=storehClust, storeChunks=storeChunks, rowSample=rowSample, r=r)
 		}
 		cl <- sfGetCluster()
 		sfExportAll()
 		## parallel version of pvclust
-		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, storeCop=TRUE, normalize=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=store, storeChunks=storeChunks, rowSample=rowSample, r=r)
+		pCluster <- parPvclust(cl,tTable, nboot=nboot, method.hclust=clustMethod, method.dist=distMetric, use.cor = use.cor, storeCop=TRUE, normalize=TRUE, seed=seed, cladeChunkIn=cladeChunkIn, store=storehClust, storeChunks=storeChunks, rowSample=rowSample, r=r)
 	}
 	
+	#add the metadata table
+	pCluster <- c(pCluster, metaTable = list())
+	pCluster$metaTable[[1]] <- metaTable #if we tried to add metaTable directly to pCluster, the c command would break it into a number of different componenets
+	class(pCluster) <- "pvclust" #set object to right class
+
 	write("Bootstrap runtime:", file = logFileName, append=TRUE)
     write(format(Sys.time()-startSection, usetz=TRUE), file = logFileName, append=TRUE);
 	Sys.time()->startSection; #start timing the analysis of the cophenetic correlations
@@ -219,26 +231,45 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 	
 	if(plotOut)
 	{
-		if(!is.null(labelFileName)) #if a file of label names to highlight was specified
+		if(!is.null(highlightFileName)) #if a file of label names to highlight was specified
 		{
-			specialLabels <- scan(labelFileName, what = "character")
+			specialLabels <- scan(highlightFileName, what = "character", sep = "\n")
 		}
 		
 		if(!is.null(outputFilename))
 		{
-			plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels, metaTable = metaTable)
-			dev.off()
+			plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
 		}
 		
 		else
 		{
-			plot(pCluster, main = main, specialLabels=specialLabels, metaTable = metaTable)
+			plot(pCluster, main = main, specialLabels=specialLabels)
 			par(ask=TRUE)
-			#pvrect(pCluster)
+		}
+		
+		#plot a histogram showing distribution of cophenetic correlation values)
+		
+		if(!is.null(outputFilename)) #if the dendrogram is being output to file, output the histogram as well
+		{
+			  if(.Platform$OS.type == "windows")
+			  {
+					png(paste(outputFilename, "histogram.png", sep=""), width=800, height=800)
+			  }
+			  
+			  else if(.Platform$OS.type == "unix")
+			  {
+					png(paste(outputFilename, "histogram.png", sep=""), width=800, height=800, type="Xlib")
+			  }
+		}
+		
+		hist(copValues)
+		abline(v = originalCor, col = "red")
+		
+		if(!is.null(outputFilename)) #if outputing to a file close the file
+		{
+			dev.off()
 		}
 	}
-	
-	#hist(copValues)
 	
 	write("Total runtime:", file = logFileName, append=TRUE)
     write(format(Sys.time()-startTotal, usetz=TRUE), file = logFileName, append=TRUE);
@@ -248,18 +279,18 @@ myCluster <- function(input.file, outputFilename = NULL, main = NULL, textlabs =
 		sfStop() #end the cluster
 	}
 	
-	pCluster <- c(pCluster, metaTable)
+	#pCluster <- c(pCluster, metaTable)
 	
 	return(pCluster)
 }
 
 varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "average" , input.transposed = TRUE, nboot = 10, runParallel = FALSE,
-					clusterNumber = 2, clusterType = 'SOCK', cladeChunkIn=NULL, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
+					numCPUs = 2, clusterType = 'SOCK', cladeChunkIn=NULL, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
 					metadata = FALSE, testRuns = 5)
 {
 		#do first test run
 		result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
-		clusterNumber = clusterNumber, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
+		numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
 		
 		auvalues <- result$edge[,"au"]
 		bpvalues <- result$edge[,"bp"]
@@ -275,7 +306,7 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		for(i in 2:testRuns)
 		{
 			result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
-			clusterNumber = clusterNumber, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
+			numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
 			
 			auvalues <- result$edge[,"au"]
 			bpvalues <- result$edge[,"bp"]
@@ -303,9 +334,16 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 
 #varianceTest("danile-azarius.txt", nboot = 50000, input.transposed = FALSE, runParallel = TRUE)
 
-logFile <- "runOutput.txt"
-write("Testing Start \n \n \n", file = logFile, append=TRUE)
-write("\n \n \nTest 1 DAN_AZ 1 Core 10 Nboot", file = logFile, append=TRUE)
-result2 <- myCluster("danile-azarius.txt", nboot=10, main="test2", distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", height = 3000, width = 30000, plot=FALSE, logFileName = logFile)
-write("\n \n \nTest 1 DAN_AZ 2 Core 10 Nboot", file = logFile, append=TRUE)
-result2 <- myCluster("danile-azarius.txt", nboot=10, main="test2", distMetric = "euclidean", runParallel = TRUE, input.transposed = FALSE, clusterNumber = 2, clusterType = "SOCK", height = 3000, width = 30000, plot=FALSE, logFileName = logFile)
+logFile <- "datasetSizeTesting.txt"
+write("3000 \n", file = logFile)
+result <- myCluster("genomicsTest3000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+write("4000 \n", file = logFile, append=TRUE)
+result <- myCluster("genomicsTest4000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+write("5000 \n", file = logFile, append=TRUE)
+result <- myCluster("genomicsTest5000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+write("6000 \n", file = logFile, append=TRUE)
+result <- myCluster("genomicsTest6000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+
+
+#result <- myCluster("GT.txt", outputFilename = "ABCDEF", nboot=1, main="Genomics Data", distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=TRUE, logFileName = logFile, metadata=TRUE)
+#textlabs = c("Az", "Dan"), chunksize = c(1,10))

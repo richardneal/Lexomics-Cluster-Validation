@@ -30,11 +30,17 @@ def randomGen(fileName, numChunks, numWords, minWordCount, maxWordCount):
 			#each chunk needs a unique name using only alphabetical characters. As such chunks are named A, B, C .... Z. If this is not enough the code will go on to
 			#AA, AB, AC, ... AZ, BA, BB, ......
 			
+			if(i >= 676):
+					line = line + chr((i / 26 / 26) + 64)
+			
 			if(i >= 26): #if i is greater then 26 the name is two letters long. The number of complete sets of 26 chunks determines the first letter. (If i is 26 first letter is A, if i is 52 first letter is B etc)
-					line = chr(i / 26 + 64)
+					line = line + chr((i / 26) % 26 + 65)
 				
 			line = line + chr(i % 26 + 65) #convert the chunk number into a letter. %26 is to seperate portion of number determining the first letter with part determing the second letter
 
+			if(line == "NA"):
+				line = "SPECIALFIX"
+			
 			for j in range(0,numWords): #for each word
 					n = randrange(minWordCount,maxWordCount + 1,1) #pick a number between minWordCount and maxWordCount inclusive
 					line = line + "\t" + str(n) #add tab to go to next column then add count for word to line
@@ -44,41 +50,43 @@ def randomGen(fileName, numChunks, numWords, minWordCount, maxWordCount):
 
 			
 	#Code used to generate special distant chunk.  Will be removed when I'm certain I no longer want any of it
-	i = 10
-	line = ""
-	if(i > 26):
-		line = chr(i / 26 + 65)
+	# i = 10
+	# line = ""
+	# if(i > 26):
+		# line = chr(i / 26 + 65)
    
-	line = line + chr(i % 26 + 65)
-	for j in range(0,250):
-		line = line + "\t" + str(0)
+	# line = line + chr(i % 26 + 65)
+	# for j in range(0,250):
+		# line = line + "\t" + str(0)
 
-	for j in range(250,500):
-		line = line + "\t" + str(6)
+	# for j in range(250,500):
+		# line = line + "\t" + str(6)
 	   
 
-	line = line + "\n"
-	output.write(line)
+	# line = line + "\n"
+	# output.write(line)
 	
-	i = 11
-	line = ""
-	if(i > 26):
-		line = chr(i / 26 + 65)
+	# i = 11
+	# line = ""
+	# if(i > 26):
+		# line = chr(i / 26 + 65)
    
-	line = line + chr(i % 26 + 65)
-	for j in range(0,250):
-		line = line + "\t" + str(6)
+	# line = line + chr(i % 26 + 65)
+	# for j in range(0,250):
+		# line = line + "\t" + str(6)
 
-	for j in range(250,500):
-		line = line + "\t" + str(0)
+	# for j in range(250,500):
+		# line = line + "\t" + str(0)
 	   
 
-	line = line + "\n"
-	output.write(line)
+	# line = line + "\n"
+	# output.write(line)
 		
 	output.close()
 
-randomGen("inputTestTwoDistOpposite.tsv", 9, 500, 0, 6)
-randomGen("inputTestTwoDistOpposite2.tsv", 9, 500, 0, 6)
-randomGen("inputTestTwoDistOpposite3.tsv", 9, 500, 0, 6)
-randomGen("inputTestTwoDistOpposite4.tsv", 9, 500, 0, 6)
+randomGen("genomicsTest1000.tsv", 1000, 136, 0, 500)
+randomGen("genomicsTest2000.tsv", 2000, 136, 0, 500)
+randomGen("genomicsTest3000.tsv", 3000, 136, 0, 500)
+randomGen("genomicsTest4000.tsv", 4000, 136, 0, 500)
+randomGen("genomicsTest5000.tsv", 5000, 136, 0, 500)
+randomGen("genomicsTest6000.tsv", 6000, 136, 0, 500)
