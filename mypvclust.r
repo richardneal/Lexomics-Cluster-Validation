@@ -290,7 +290,7 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 {
 		#do first test run
 		result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
-		numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
+		numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE, logFileName = "dummy.txt")
 		
 		auvalues <- result$edge[,"au"]
 		bpvalues <- result$edge[,"bp"]
@@ -306,7 +306,7 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		for(i in 2:testRuns)
 		{
 			result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
-			numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE)
+			numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE, logFileName = "dummy.txt")
 			
 			auvalues <- result$edge[,"au"]
 			bpvalues <- result$edge[,"bp"]
@@ -327,22 +327,35 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		
 		bpDiffs <- (maxBPs - minBPs) * 100 #get difference between min and max au values and convert to percentages (values were decimals)
 		
-		write(paste("Greatest AU Difference", max(auDiffs)), sep=" ")
-		write(paste("Greatest BP Difference", max(bpDiffs)), sep=" ")
+		print(paste("Greatest AU Difference", max(auDiffs)), sep=" ")
+		#write(paste("Greatest BP Difference", max(bpDiffs)), sep=" ")
 		
 }
 
-#varianceTest("danile-azarius.txt", nboot = 50000, input.transposed = FALSE, runParallel = TRUE)
+print("10")
+varianceTest("danile-azarius.txt", nboot = 10, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+print("100")
+varianceTest("danile-azarius.txt", nboot = 100, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+print("500")
+varianceTest("danile-azarius.txt", nboot = 500, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+print("1000")
+varianceTest("danile-azarius.txt", nboot = 1000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+print("5000")
+varianceTest("danile-azarius.txt", nboot = 5000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+print("10000")
+varianceTest("danile-azarius.txt", nboot = 10000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+print("20000")
+varianceTest("danile-azarius.txt", nboot = 20000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
 
-logFile <- "datasetSizeTesting.txt"
-write("3000 \n", file = logFile)
-result <- myCluster("genomicsTest3000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
-write("4000 \n", file = logFile, append=TRUE)
-result <- myCluster("genomicsTest4000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
-write("5000 \n", file = logFile, append=TRUE)
-result <- myCluster("genomicsTest5000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
-write("6000 \n", file = logFile, append=TRUE)
-result <- myCluster("genomicsTest6000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+logFile <- ""
+#write("3000 \n", file = logFile)
+#result <- myCluster("danile-azarius.txt", outputFilename = "Dummy.png", nboot=50, main="Genomics Data", distMetric = "euclidean", runParallel = FALSE, input.transposed = FALSE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+#write("4000 \n", file = logFile, append=TRUE)
+#result <- myCluster("genomicsTest4000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+#write("5000 \n", file = logFile, append=TRUE)
+#result <- myCluster("genomicsTest5000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+#write("6000 \n", file = logFile, append=TRUE)
+#result <- myCluster("genomicsTest6000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
 
 
 #result <- myCluster("GT.txt", outputFilename = "ABCDEF", nboot=1, main="Genomics Data", distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=TRUE, logFileName = logFile, metadata=TRUE)

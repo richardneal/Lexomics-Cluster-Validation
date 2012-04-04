@@ -630,26 +630,22 @@ msfit <- function(bp, r, nboot) {
   }
 
   bp <- bp[use]; r <- r[use]; nboot <- nboot[use] #get only the bp that had values greater then 0 and less then 1
-  #print(bp)
+
   zz <- -qnorm(bp) #find where the bp values lie phi inverse
-  #print(zz)
+
   vv <- ((1 - bp) * bp) / (dnorm(zz)^2 * nboot)
   a$use <- use; a$r <- r; a$zz <- zz
 
   X   <- cbind(sqrt(r), 1/sqrt(r)); dimnames(X) <- list(NULL, c("v","c"))
-  #print(X)
+  
   fit <- lsfit(X, zz, 1/vv, intercept=FALSE) #fit the curve
   a$coef <- coef <- fit$coef #get the coefficents
-
-  #print(coef)
   
   h.au <- c(1, -1); h.bp <- c(1, 1)
   
   z.au <- drop(h.au %*% coef); z.bp <- drop(h.bp %*% coef) #%*% is matrix multiplication  au is v - c bp is v + c
 
   a$p["au"] <- pnorm(-z.au); a$p["bp"] <- pnorm(-z.bp) #phi
-  #print(z.au)
-  #print(z.bp)
   
   V <- solve(crossprod(X, X/vv))
   vz.au <- drop(h.au %*% V %*% h.au); vz.bp <- drop(h.bp %*% V %*% h.bp)
