@@ -289,7 +289,7 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 					metadata = FALSE, testRuns = 5)
 {
 		#do first test run
-		result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
+		result <- trueTree(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
 		numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE, logFileName = "dummy.txt")
 		
 		auvalues <- result$edge[,"au"]
@@ -305,7 +305,7 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		#do rest of test runs
 		for(i in 2:testRuns)
 		{
-			result <- myCluster(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
+			result <- trueTree(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
 			numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE, logFileName = "dummy.txt")
 			
 			auvalues <- result$edge[,"au"]
@@ -345,11 +345,11 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 #print("10000")
 #varianceTest("danile-azarius.txt", nboot = 10000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
 #print("20000")
-#varianceTest("danile-azarius.txt", nboot = 20000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+varianceTest("danile-azarius.txt", nboot = 20000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
 
 logFile <- ""
 #write("3000 \n", file = logFile)
-result <- trueTree("fedpapers.tsv", outputFilename = "dummy.png", nboot=5, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+#result <- trueTree("fedpapers.tsv", outputFilename = "dummy.png", nboot=5, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=FALSE, logFileName = logFile, metadata=FALSE)
 #write("4000 \n", file = logFile, append=TRUE)
 #result <- myCluster("genomicsTest4000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
 #write("5000 \n", file = logFile, append=TRUE)
