@@ -196,7 +196,7 @@ generateLineColorList <- function(x, mergeTableRow, specialLabels, metaTable = N
 }
   
  #plots a pvclust object
-plot.pvclust <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
+plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
                          main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, showBP=FALSE, ...)
