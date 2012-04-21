@@ -279,7 +279,7 @@ plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, flo
        font=font, lty=lty, lwd=lwd, ...)
   if(print.pv)
     text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num, showBP = showBP)
-	
+
   if(!is.null(filename)) #if writing to a file close the connection
   {
 	dev.off()
@@ -287,7 +287,7 @@ plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, flo
 }
 
 #this function handles the actual writing of the au and bp labels on the plot
-text.pvclust <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL, font=NULL, showBP = FALSE, ...)
+text.trueTree <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL, font=NULL, showBP = FALSE, ...)
 {
   axes <- hc2axes(x$hclust)
   usr  <- par()$usr; wid <- usr[4] - usr[3]
@@ -305,11 +305,13 @@ text.pvclust <- function(x, col=c(2,3,8), print.num=TRUE,  float=0.01, cex=NULL,
             col=col[2], pos=4, offset=.3, cex=cex, font=font)
   }
   if(print.num)
+  {
     a <- text(x=axes[,1], y=axes[,2], rn,
               col=col[3], pos=1, offset=.3, cex=cex, font=font)
+  }
 }
 
-print.pvclust <- function(x, which=NULL, digits=3, ...)
+print.trueTree <- function(x, which=NULL, digits=3, ...)
 {
   if(is.null(which)) which <- 1:nrow(x$edges)
   cat("\n")
@@ -320,7 +322,7 @@ print.pvclust <- function(x, which=NULL, digits=3, ...)
   cat("\n")
 }
 
-summary.pvclust <- function(object, ...){
+summary.trueTree <- function(object, ...){
   class(object) <- "list"
   summary(object, ...)
 }
@@ -396,7 +398,7 @@ msplot <- function(x, edges=NULL, ...)
     }
   }
 
-lines.pvclust <- function(x, alpha=0.95, pv="au", type="geq", col=2, lwd=2, ...)
+lines.trueTree <- function(x, alpha=0.95, pv="au", type="geq", col=2, lwd=2, ...)
   {
     len <- nrow(x$edges)
     member <- hc2split(x$hclust)$member

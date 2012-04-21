@@ -262,8 +262,8 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 			  }
 		}
 		
-		hist(copValues)
-		abline(v = originalCor, col = "red")
+		#hist(copValues)
+		#abline(v = originalCor, col = "red")
 		
 		if(!is.null(outputFilename)) #if outputing to a file close the file
 		{
@@ -345,11 +345,12 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 #print("10000")
 #varianceTest("danile-azarius.txt", nboot = 10000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
 #print("20000")
-varianceTest("danile-azarius.txt", nboot = 20000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
+#varianceTest("danile-azarius.txt", nboot = 20000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
 
 logFile <- ""
 #write("3000 \n", file = logFile)
-#result <- trueTree("fedpapers.tsv", outputFilename = "dummy.png", nboot=5, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+result <- trueTree("Thesis Defense Example.tsv", outputFilename = "ThesisDefense3", nboot=4, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=TRUE, logFileName = logFile, metadata=FALSE)
+#result <- trueTree("fedpapers.tsv", outputFilename = "dummy.png", nboot=10000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=FALSE, logFileName = logFile, metadata=FALSE)
 #write("4000 \n", file = logFile, append=TRUE)
 #result <- myCluster("genomicsTest4000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
 #write("5000 \n", file = logFile, append=TRUE)

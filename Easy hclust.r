@@ -221,4 +221,4 @@ easyhclust <- function(inputFile, highlightFileName = NULL, height = 800, width 
 	return(easyhclust)
 }
 
-result <- easyhclust("noDup_10K_cull_merged_4mer.tsv", outputFileName = "Allgenetics", main = "All genomics Chunks", highlightFileName="exclude.txt", width = 50000, height = 10000, metadata = TRUE)
+result <- easyhclust("Thesis Defense Example.tsv", outputFileName = "ThesisDefense2")
