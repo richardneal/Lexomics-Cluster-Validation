@@ -14,85 +14,163 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 					numCPUs = 2, clusterType = 'SOCK', confidenceInterval = .95, seed = NULL, cladeChunkIn=NULL, storehClust=FALSE, storeChunks=FALSE, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
 					height=800, width=800, highlightFileName=NULL, metadata = FALSE, plotOut = TRUE, logFileName = "")
 {
-	#input.file is a character vector containing the name of the file to use as input.
-	
-	#outputFilename is a character vector used to name an output file. If outputFilename is NULL the program will display a plot of the dendrogram. If outputFilename is not null that plot will instead be saved as a png file named
-	#outputFilename
-	
-	#main is a character vector that will be used as a title for the the dendrogram drawn. If main is left set to null no title will be added
+#The main function in trueTree that is used to perform cluster validation. trueTree will output
+#a dendrogram as well as an analysis of the cophenetic correlation coefficients from the bootstrap
+#process and return an object that stores all of the important information for later use.
 
-	## List of possible distance metrics
-	## METHODS <- c("euclidean", "maximum", "manhattan", "canberra",
-	## "binary", "minkowski", "correlation", "uncentered", "abscor")
+# input.file - Character vector containing the name of the file containing the input data
 
-	## List of possible cluster-distance methods
-	## METHODS <- c("ward", "single", "complete", "average", "mcquitty",
-	## "median", "centroid")
+# outputFilename - Character vector containing the name of the file to save the dendrogram
+# showing the results. The dendrogram will be saved as a .png file but the file extension should
+# be left out of the file name as trueTree will add it automatically. Additionally a histogram
+# showing the distribution of cophenetic correlation coefficients will be saved to outputFilenamehistogram.
+# png. If outputFilename is set to NULL, which it is by default, R will instead create a
+# window to display the results.
 
-	## If the input has text names on top, set input.transposed <- FALSE
+# main - Optional character vector containing a title for the dendrogram. This title will be
+# displayed at the top of the dendrogram.
 
-	#nboot is the number of bootstrap replications to preform. Since pvclust does multiscale bootstrapping it generates this number of bootstraps 10 different times using different sample sizes
-	#so the total number of new hclust objects generated is 10*nboot
-	
-	#runParallel sets whether the program does the bootstrapping on a single core or runs it in parallel. If runParallel is false the code is executed on a single processer and there are no special requirements for 
-	#being able to run the code. The numCPUs, and clusterType parameters will also be ignored. If runParallel is set to true, the snow and snowfall librarys must be installed and the numCPUs,
-    #and clusterType parameters will be used. Currently there is one other discrepency that needs to be fixed. When runParallel is false each run will produce a new set of results, and when runParallel is true, each run will
-	#produce the same set of results due to parpvclust giving each processor a fixed seed.
-	
-	#clusterType is the type of cluster to create. If set to 'SOCK' the cluster will use raw sockets, which due to security concerns will not work over a network with some computers. If set to MPI will use the MPI protocal
-	#which requries that the computer has a MPI implementation, installed, properly set up and running, as well as having the r package rmpi installed. PVM (Parallel Virtual Machine) and NWS(networkspaces) 
-	#are theoretically supported but not tested. See the snow/snowfall documentation for more information about the necessary steps to use those.
-	
-	#numCPUs is the number of processers to use in the cluster. If the clusterType is set to SOCK all the processers used will be from the machine running this code. If clusterType is set to MPI the processers used 
-	#can come from any machine mpi is set up to access. If numCPUs is set to a value greater then the number of processers actually available the code will still run, but some processers will end up running multiple instances
-	#of the program which will increase the total run time.
-	
-	#confidence interval is the confidence interval for the cophenetic correlations given as a percent entered in decimal form. The program will give the output the cophenetic correlations at the lower and upper ends of the interval. 
-	#The lower bound can be computed as (100% - confidence interval) / 2 and the upper bound as (100% - lower bound). For example if the confidence interval is 95% the lowerbound will be 2.5% and the upper bound 97.5%
+# textLabs - See description for chunksize
 
-	#the seed parameter is used to set the seed used for random number generation. By default seed is set to null which will cause the program to use a random seed. If a value for seed is given the program will instead use that
-	#value as the seed for random number generation. When not running in parallel a single value should be entered for seed. When running in parallel a list the same length as numCPUs should be entered which each item in the list
-	#being the seed for one particular processor. If seed is set to null and you want to check what the number generated for use as a seed was, it is stored as the attribute seed of the pvclust object returned
-	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$seed.
+# chunkSize - textLabs and chunkSize are a pair of optional vectors that are used to relabel all
+# the chunks in the dataset. These parameters are designed to be used when there the dataset
+# contains a number of texts which have been split into multiple chunks. textLabs is a character
+# vector and should contain the names of all the texts in the order in which they appear in the
+# dataset. chunksize is a vector that should contain then number of chunks in each of those texts
+# in the same order as the texts were listed. The function will then give the initial chunk the label
+# for first chunk in the first text, the second chunk as being the second chunk in the first text and
+# so forth until the number of chunks listed in chunkSize has been seen, at which point it will start
+# labeling chunks as being part of the second text. For instance if there were five chunks total and
+# textLabs = ("Bob", "George") and chunkSize = (2,3) the chunks will be labeled Bob 1, Bob 2,
+# George 1, George 2, George 3. textLabs and chunkSize need to have the same length and the
+# sum of the chunksizes needs to be equal to the total number of chunks.
+
+# distMetric - Character vector containing the method to use when calculating distances between
+# chunks. Supports "euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski",
+# "correlation", "uncentered", and "abscor" methods.
+
+# clustMethod - Character vector containing the method to use when calculating distances
+# between chunks. Supports "euclidean", "maximum", "manhattan", "canberra", "binary",
+# "minkowski", "correlation", "uncentered", and "abscor" methods.
+
+# use.cor - correlation method to use with the "correlation", "uncentered", and "abscor" distance methods
+#supports "all.obs", "complete.obs" and "pairwise.complete.obs".
+
+# input.transposed - Boolean that tells trueTree what input format to expect. input.transposed
+# should equal TRUE if each row holds a chunk and each column a word, or FALSE if each column
+# holds a chunk and each row a word.
+
+# nboot - Integer that says how many resampled datasets should be generated for each r value
+
+# runParallel - Boolean that whether to run the bootstrap in parallel. If TRUE the bootstrap
+# will be run over multiple processors with the details of how specified by the numCPUs and
+# clusterType parameters. If FALSE then the bootstrap will be run on a single processor.
+
+# numCPUs - Integer denoting how many processors should the code be run over. This parameter
+# has no effect if runParallel is set to false.
+
+# clusterType - Character vector containing what type of machine cluster is being used. Valid
+# types are "sock" for raw sockets, "pvm" for parallel virtual machine, "nws" for NetWorkSpaces
+# and "mpi" for Message Passing Interface. "sock" is the only option that can be used without any
+# initial setup but only allows the bootstrap to be split across the cores in the machine the code
+# is being run on. "mpi" supports running the bootstrap across multiple machines but requires
+# an existing mpi runtime. "pvm" and "nws" are untested. See the snow documentation Tierney
+# et al. (2011) for more information on how to use these options.
+
+# confidenceInterval - Numeric value containing is the confidence interval to use for the cophenetic
+# correlation coefficient analysis. The function will return the cophenetic correlation coefficients
+# that lie at the upper and lower bounds of this interval. The interval should be given as a
+# decimal not a percentage.
+
+# seed - Parameter that gives a seed to use for the random number generator. If runParallel is
+# FALSE, then seed should be a single integer. If runParallel is true then seed should be a vector
+# containing one seed for each processor with each seed being an integer. If seed is left to NULL
+# then a seed or seeds will be automatically generated based on the current time.
+
+# cladeChunkIn - Vector that allows the use of intra-clade based resampling. cladeChunkIn
+# should contain 1 integer for each chunk, with the integer giving the number of the clade that
+# chunk is in. If cladeChunkIn is left to NULL then intra-chunk based resampling will be used
+# instead.
+
+# storehClust - Boolean specifying whether or not to store all the generated hclust objects from
+# the bootstrap. If TRUE the hclust objects will be saved, if FALSE they won't. WARNING:
+# Storing the hclust objects consumes a lot of memory. If this option is used in conjunction with
+# a high nboot value, or a large number of r values, the computer running trueTree may run out
+# of RAM, causing the code to crash.
+
+# storeChunks - Boolean specifying whether or not to store all the resampled datasets from the
+# bootstrap. If TRUE the resampled datasets will be saved, if FALSE they won't. WARNING:
+# Storing the resampled datasets consumes a lot of memory. If this option is used in conjunction
+# with a high nboot value, or a large number of r values, the computer running trueTree may run
+# out of RAM, causing the code to crash.
+
+# rowSample - Boolean specifying whether or not to use pvclusts original resampling method. If
+# TRUE interrow based resampling will be used, where rows are picked from the original dataset
+# to place in the new resampled dataset. WARNING: This resampling method is poorly suited to
+# some domains like text mining. Before this option is used the user should determine whether it
+# is appropriate for the domain where it is being applied.
+
+# r - Vector specifying what r values should be used to run the multiscale bootstrapping. r must
+# contain at least two values for any AU values to be generated.
+
+# height - Vector specifying the height in pixels of the dendrogram that will be created. This
+# parameter only works when outputting to a file.
+
+# width - Vector specifying the width in pixels of the dendrogram that will be created. This
+# parameter only works when outputting to a file.
+
+# highlightFileName - Character vector containing the name of a file containing a list of chunks
+# that should be highlighted in the dendrogram. The file should list one chunk per line, and the
+# line should contain the exact label of the chunk to highlight.
+
+# metadata - Boolean specifying whether the input file contains metadata. Metadata is used to
+# color a dendrogram. Currently only one metadata format is recognized. See Appendix A for
+# details.
+
+# plotOut - Boolean that specifies whether the dendrogram containing the results of the cluster
+# validation should be displayed. If true the dendrogram will be displayed/saved to a file. If false
+# no action will be taken.
+
+# logFileName - Optional character vector containing the name of a file to write the results when
+# running trueTree. The results printed are various pieces of timing data, as well as the cophenetic
+# correlation analysis. If the file specified already exists the results of the current run will be appended
+# to the end of the file. If left to the default of "" all output will be displayed in the console.
 	
-	#cladeChunkIn is a parameter to allow resampling by clades. Normally the resampling happens on a per chunk basis, meaning that the words in the new chunks created from the bootstraping are taken from the list of words in that chunk
-	#when resampling is done by clades each chunk inside of one of the clades used in the resampling draws from all the words in the clade when resampling is perfomed.  cladeChunkIn allows the user to define the clades being used. 
-	#It is a list the same length as the number of chunks in the input file. The first number in the list corrosponds to the first chunk and so on with the first chunk being the first chunk listed in the input file. Each number
-	#specifies which clade that chunk belongs in. For instance if the list passed was [1,2,2,3] the first chunk goes into clade 1, chunks 2 and 3 go into clade 2, and chunk 4 goes into clade 3.
-	#If this parameter is left to null the program will resample intraclade instead.
-	#WARNING. It is up to the user to make sure the clades defined by this parameter make sense. It is quite possible to input clades that don't exist in the actual dendrogram which may produce weird results. T\
-	
-	#storehClust is a boolean that sets pvclusts store parameter. If storehClust is set to true then the result objected returned by the function will contain a storehClust attribute which is a list holding all the hclust objects created during
-	#the bootstrapping. The hclust obects will be stored in a list as the attribute storehClust of the of the pvclust object returned
-	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$storehClust. The format of storehClust is as a list containing a number of sublists with there being one sublist for each
-	#r value pvclust used, and each sublist having all the hclust objects created for that r value
-	#WARNING: setting storehClust to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
-	#and only used on smaller test runs to see what kind of dendrograms are being created. 
-	
-	#storeChunks is a boolean that sets pvclusts store parameter. If store is set to true then the result objected returned by the function will contain a store attribute which is a list holding all the new chunks created during
-	#the bootstrapping. The new chunks	will be stored in a list as the attribute storeChunk of the pvclust object returned
-	#For example if you named the pvclust object returned result the new chunks can be accessed as follows: result$storeChunks. The format of storeChunks is as a list containing
-	#a number of sublists with there being one sublist for each r value pvclust used, and each sublist having all the new chunks created for that r value
-	#WARNING: setting store to true will likely cause R to run out of memory if nboot is set to a high value like 100,000. As such this parameter should be set to false when preforming actual validation
-	#and only used on smaller test runs to see what kind of dendrograms are being created. 
-	
-	#rowSample is a boolean that if true allows the use of pvclusts original resampling method, where instead of basing the resampling around the number of times each individual word appeared in each individual clade, it builds
-	#the new data table by picking out a new set of words to use for all the chunks keeping the counts for the number of times those words appeared in the orignal text for those chunks. If rowSample is set to true then the 
-	#cladeNumber parameter will be ignored. WARNING. It is currently unclear whether this is actually a good method of resampling. By default this parameter is set to false and for now it is advised that it be left to false
-	#unless you have a specific reason for wanting to use it.
-	
-	#r lets you set the r values that will be used in the multiscale bootstrapping. The format is a vector/list containing all the r values to use
-	
-	#height and width set the height and width of the dendrogam plottted, when the dendrogram is saved to a file. On linux there is a max width of 32767
-	
-	#highlightFileName is the name of a file containing of a list of chunks to highlight in the dendrogram. The format is one chunk per line, and each line contains the exacat label for the chunk that should be
-	#highlighted
-	
-	#metadata is a boolean that states whether the file contains metadata along with the counts for different words. Currently this only works with one specific metadata format. 
-	
-	#This function will return a list containing a modified pvclust object with a number of additional attributes. The storeCop attribute is a list of lists with each sublist containing the cophenetic correlation values
-	#for all the hclust objects generated for a particular r value. The first sublist contains the values for the first r value used and so on. There is also a seed attribute and a storeChunks attributes which are described
-	#in the documentation for the parameters with the same names. If you want to see what the r values where they are stored as a list in the attribute r
+#trueTree returns a trueTree object that contains the following attributes
+
+# hclust - The hclust object formed from the original dataset
+
+# edges - Table containing AU and BP values for every clade in the order that the clades were
+# formed, as well as the standard error for both, the v and c found during the calculations.
+# count - Table containing the number of times each clade in the original clustering was formed
+# during the bootstrap for each r value used.
+
+# msfit - msfit object created containing the results of the curve fitting used to calculate the au
+# values. See pvclusts documentation for more information (Suzuki and Shimodaira, 2011)
+
+# nboot The number of resampled databases generated for each r value
+
+# r Vector containing all the r values used in the multiscale resampling
+
+# storehClust - List containing all the hclust objects generating while running the bootstrap. This
+# will be NULL if store was set to false in trueTree's parameters. The list will contain one sublist
+# for each r value used, and each sublist has all the hclust objects generated for that r value.
+# distance The distance matrix generated from the original dataset
+
+# seed - A vector containing all the seeds for random number generator used to run the bootstrap.
+# There will be one seed for each processor used.
+
+# storeChunks - List containing all the resampled datasets objects generating while running the
+# bootstrap. This will be NULL if storeChunks was set to false in trueTree's parameters. The list
+# will contain one sublist for each r value used, and each sublist has all the resampled datasets
+# generated for that r value.	
+
+# storeCop - List containing all the cophenetic correlation coefficents generating while running the
+# bootstrap. This will be NULL if storeChunks was set to false in trueTree's parameters. The list
+# will contain one sublist for each r value used, and each sublist has all the cophenetic correlation coefficents
+# generated for that r value.	
+
+# metaTable - table containing only the metadata from the input file assuming said input file contained any metadata
 	
 	library(stats)
 	Sys.time()->startTotal; #holds start time of program so time to run entire program can be calculated
@@ -195,12 +273,6 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 	listH <- pCluster$storeCop
 
 	copValues <- unlist(listH)
-
-
-	if(runParallel)
-	{
-		#copValues <- parallelSort(copValues)
-	}
 	
 	#write(copValues)
 	copValues <- unlist(copValues)
@@ -287,8 +359,6 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 		sfStop() #end the cluster
 	}
 	
-	#pCluster <- c(pCluster, metaTable)
-	
 	return(pCluster)
 }
 
@@ -296,6 +366,16 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 					numCPUs = 2, clusterType = 'SOCK', cladeChunkIn=NULL, rowSample=FALSE, r=seq(.5,1.4,by=.1), 
 					metadata = FALSE, testRuns = 5)
 {
+# Function for testing how great the AU and BP values can vary for a particular dataset when using
+# a specific set of parameters. varianceTest runs trueTree a user specified number of times, and finds
+# the largest amount an AU value differs over all those runs and the largest amount a BP differs over
+# all those runs.
+
+# testRuns How many times should trueTree be run.
+
+# ... All other parameters modify the behavior of trueTree when it is run and function identically
+# to the parameters with the same name for the trueTree function.
+
 		#do first test run
 		result <- trueTree(input.file, distMetric = distMetric, clustMethod = clustMethod, input.transposed = input.transposed, nboot = nboot, runParallel = runParallel,
 		numCPUs = numCPUs, clusterType = clusterType, cladeChunkIn = cladeChunkIn, rowSample = rowSample, r = r, metadata = metadata, plotOut = FALSE, logFileName = "dummy.txt")
@@ -340,6 +420,5 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		
 }
 logFile <- ""
-#write("3000 \n", file = logFile)
 result <- trueTree("fedpapers.tsv", outputFilename = "dummy", nboot=1, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=TRUE, logFileName = logFile, metadata=FALSE, width = 100000, height = 2000)
 

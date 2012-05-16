@@ -1,4 +1,4 @@
-currentNode = 1
+currentNode = 1 #global variable to keep track of position while recursively travelling dendrogram during the plotting code
 
 pvclust <- function(data, method.hclust="average",
                     method.dist="correlation", use.cor="pairwise.complete.obs",
