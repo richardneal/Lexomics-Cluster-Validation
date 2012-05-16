@@ -218,7 +218,15 @@ plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, flo
   {
 	if(!is.null(filename))
  	{
-		png(paste(filename, ".png", sep=""), width=width, height=height, type="Xlib")
+		if(width > 32766)
+		{
+				png(paste(filename, ".png", sep=""), width=32766, height=height, type="Xlib")
+		}
+		
+		else
+		{
+				png(paste(filename, ".png", sep=""), width=width, height=height, type="Xlib")
+		}
 	}
 
 	else

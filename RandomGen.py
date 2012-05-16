@@ -1,7 +1,4 @@
-6        #try shuffling word counts
-#change to maxWordCount 5  X
-#set numWords to DAZ set maxWordCount to max of overall chunks in DAZ set numChunks to 11 
-#check if transpose is working correctly
+#Code to randomly generate a dataset to run trueTree on.
 
 
 from random import randrange
@@ -47,46 +44,7 @@ def randomGen(fileName, numChunks, numWords, minWordCount, maxWordCount):
 					
 			line = line + "\n" #add end of line character
 			output.write(line) 
-
-			
-	#Code used to generate special distant chunk.  Will be removed when I'm certain I no longer want any of it
-	# i = 10
-	# line = ""
-	# if(i > 26):
-		# line = chr(i / 26 + 65)
-   
-	# line = line + chr(i % 26 + 65)
-	# for j in range(0,250):
-		# line = line + "\t" + str(0)
-
-	# for j in range(250,500):
-		# line = line + "\t" + str(6)
-	   
-
-	# line = line + "\n"
-	# output.write(line)
-	
-	# i = 11
-	# line = ""
-	# if(i > 26):
-		# line = chr(i / 26 + 65)
-   
-	# line = line + chr(i % 26 + 65)
-	# for j in range(0,250):
-		# line = line + "\t" + str(6)
-
-	# for j in range(250,500):
-		# line = line + "\t" + str(0)
-	   
-
-	# line = line + "\n"
-	# output.write(line)
 		
 	output.close()
 
 randomGen("genomicsTest1000.tsv", 1000, 136, 0, 500)
-randomGen("genomicsTest2000.tsv", 2000, 136, 0, 500)
-randomGen("genomicsTest3000.tsv", 3000, 136, 0, 500)
-randomGen("genomicsTest4000.tsv", 4000, 136, 0, 500)
-randomGen("genomicsTest5000.tsv", 5000, 136, 0, 500)
-randomGen("genomicsTest6000.tsv", 6000, 136, 0, 500)

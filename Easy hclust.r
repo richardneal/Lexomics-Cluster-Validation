@@ -1,3 +1,5 @@
+#This file contains the code to run cluster analysis and benefit from the graph coloring code in trueTree with out doing the computationally expensive cluster validation
+
 currentNode = 1
 
 #gives the node its proper color
@@ -221,4 +223,4 @@ easyhclust <- function(inputFile, highlightFileName = NULL, height = 800, width 
 	return(easyhclust)
 }
 
-result <- easyhclust("Thesis Defense Example.tsv", outputFileName = "ThesisDefense2")
+result <- easyhclust("Thesis Defense Example.tsv", outputFileName = "ThesisDefense1")

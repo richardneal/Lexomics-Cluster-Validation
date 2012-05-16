@@ -83,7 +83,7 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 	
 	#r lets you set the r values that will be used in the multiscale bootstrapping. The format is a vector/list containing all the r values to use
 	
-	#height and width set the height and width of the dendrogam plottted, when the dendrogram is saved to a file
+	#height and width set the height and width of the dendrogam plottted, when the dendrogram is saved to a file. On linux there is a max width of 32767
 	
 	#highlightFileName is the name of a file containing of a list of chunks to highlight in the dendrogram. The format is one chunk per line, and each line contains the exacat label for the chunk that should be
 	#highlighted
@@ -161,7 +161,6 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 
 	else
 	{
-		#ADD MORE ERROR CHECKING
 		library(snowfall) #I will write more about next line missing ip argument
 		
 		sfInit(parallel=TRUE, cpus=numCPUs,type=clusterType) #This creates the cluster. If clusterType is SOCK all the processors will be taken from the current computer. If the type is MPI, the processors can be taken
@@ -214,7 +213,7 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 	write(paste("Original Cophenetic correlation", originalCor, sep=" "), file = logFileName, append=TRUE)
 	write(paste("Number of Cophenetic correlation values", length(copValues), sep=" "), file = logFileName, append=TRUE)
 	write(paste("Minimum Cophenetic correlation", min(copValues), sep=" "), file = logFileName, append=TRUE)
-    write(paste(lowerBound * 100, "% interval Copheneticcorrelation ", copValues[round(copSize * lowerBound)], sep=""), file = logFileName, append=TRUE)	
+    write(paste(lowerBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * lowerBound)], sep=""), file = logFileName, append=TRUE)	
     write(paste("Median Cophenetic correlation", median(copValues), sep=" "), file = logFileName, append=TRUE)
 	write(paste(upperBound * 100, "% interval Cophenetic correlation ", copValues[round(copSize * upperBound)], sep=""), file = logFileName, append=TRUE)	
     write(paste("Maximum Cophenetic correlation", max(copValues), sep=" "), file = logFileName, append=TRUE)
@@ -238,7 +237,15 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 		
 		if(!is.null(outputFilename))
 		{
-			plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
+			if(.Platform$OS.type == "unix")
+		  	{
+				plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
+		 	}
+
+			else
+			{
+				plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
+			}
 		}
 		
 		else
@@ -262,8 +269,9 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 			  }
 		}
 		
-		#hist(copValues)
-		#abline(v = originalCor, col = "red")
+		#create the histrogram
+		hist(copValues)
+		#abline(v = originalCor, col = "red") #add a line showing where original falls
 		
 		if(!is.null(outputFilename)) #if outputing to a file close the file
 		{
@@ -331,33 +339,7 @@ varianceTest <- function(input.file, distMetric = "euclidean" , clustMethod = "a
 		#print(paste("Greatest BP Difference", max(bpDiffs)), sep=" ")
 		
 }
-
-#print("10")
-#varianceTest("danile-azarius.txt", nboot = 10, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-#print("100")
-#varianceTest("danile-azarius.txt", nboot = 100, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-#print("500")
-#varianceTest("danile-azarius.txt", nboot = 500, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-#print("1000")
-#varianceTest("danile-azarius.txt", nboot = 1000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-#print("5000")
-#varianceTest("danile-azarius.txt", nboot = 5000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-#print("10000")
-#varianceTest("danile-azarius.txt", nboot = 10000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-#print("20000")
-#varianceTest("danile-azarius.txt", nboot = 20000, input.transposed = FALSE, runParallel = TRUE, testRuns = 20)
-
 logFile <- ""
 #write("3000 \n", file = logFile)
-result <- trueTree("Thesis Defense Example.tsv", outputFilename = "ThesisDefense3", nboot=4, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=TRUE, logFileName = logFile, metadata=FALSE)
-#result <- trueTree("fedpapers.tsv", outputFilename = "dummy.png", nboot=10000, distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=FALSE, logFileName = logFile, metadata=FALSE)
-#write("4000 \n", file = logFile, append=TRUE)
-#result <- myCluster("genomicsTest4000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
-#write("5000 \n", file = logFile, append=TRUE)
-#result <- myCluster("genomicsTest5000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
-#write("6000 \n", file = logFile, append=TRUE)
-#result <- myCluster("genomicsTest6000.tsv", outputFilename = "Dummy.png", nboot=2, main="Genomics Data", distMetric = "euclidean", runParallel = TRUE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=FALSE, logFileName = logFile, metadata=FALSE)
+result <- trueTree("fedpapers.tsv", outputFilename = "dummy", nboot=1, distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", plotOut=TRUE, logFileName = logFile, metadata=FALSE, width = 100000, height = 2000)
 
-
-#result <- myCluster("GT.txt", outputFilename = "ABCDEF", nboot=1, main="Genomics Data", distMetric = "euclidean", runParallel = FALSE, input.transposed = TRUE, numCPUs = 2, clusterType = "SOCK", height = 3000, width = 100000, plotOut=TRUE, logFileName = logFile, metadata=TRUE)
-#textlabs = c("Az", "Dan"), chunksize = c(1,10))
