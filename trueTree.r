@@ -50,8 +50,8 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 # "correlation", "uncentered", and "abscor" methods.
 
 # clustMethod - Character vector containing the method to use when calculating distances
-# between chunks. Supports "euclidean", "maximum", "manhattan", "canberra", "binary",
-# "minkowski", "correlation", "uncentered", and "abscor" methods.
+# between clades containing multiple chunks. Supports "ward", "single", "complete", "average", 
+#"mcquitty", "median", and "centroid" methods
 
 # use.cor - correlation method to use with the "correlation", "uncentered", and "abscor" distance methods
 #supports "all.obs", "complete.obs" and "pairwise.complete.obs".
@@ -311,12 +311,12 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 		{
 			if(.Platform$OS.type == "unix")
 		  	{
-				plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
+				plot(pCluster, outputFilename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
 		 	}
 
 			else
 			{
-				plot(pCluster, filename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
+				plot(pCluster, outputFilename=outputFilename, main = main, height=height, width=width, specialLabels=specialLabels)
 			}
 		}
 		
@@ -343,7 +343,7 @@ trueTree <- function(input.file, outputFilename = NULL, main = NULL, textlabs = 
 		
 		#create the histrogram
 		hist(copValues)
-		#abline(v = originalCor, col = "red") #add a line showing where original falls
+		abline(v = originalCor, col = "red") #add a line showing where original falls
 		
 		if(!is.null(outputFilename)) #if outputing to a file close the file
 		{

@@ -196,16 +196,16 @@ generateLineColorList <- function(x, mergeTableRow, specialLabels, metaTable = N
 }
   
  #plots a pvclust object
-plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
+plot.trueTree <- function(x, outputFilename = NULL, print.pv=TRUE, print.num=TRUE, float=0.01,
                          col.pv=c(2,3,8), cex.pv=0.8, font.pv=NULL,
                          col=NULL, cex=NULL, font=NULL, lty=NULL, lwd=NULL,
                          main=NULL, sub=NULL, xlab=NULL, height=800, width=800, specialLabels=NULL, showBP=FALSE, ...)
 {
   if(.Platform$OS.type == "windows")
   {
-  	if(!is.null(filename))
+  	if(!is.null(outputFilename))
   	{
-		png(paste(filename, ".png", sep=""), width=width, height=height)
+		png(paste(outputFilename, ".png", sep=""), width=width, height=height)
   	}
 	
 	else
@@ -216,16 +216,16 @@ plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, flo
   
   else if(.Platform$OS.type == "unix")
   {
-	if(!is.null(filename))
+	if(!is.null(outputFilename))
  	{
 		if(width > 32766)
 		{
-				png(paste(filename, ".png", sep=""), width=32766, height=height, type="Xlib")
+				png(paste(outputFilename, ".png", sep=""), width=32766, height=height, type="Xlib")
 		}
 		
 		else
 		{
-				png(paste(filename, ".png", sep=""), width=width, height=height, type="Xlib")
+				png(paste(outputFilename, ".png", sep=""), width=width, height=height, type="Xlib")
 		}
 	}
 
@@ -288,7 +288,7 @@ plot.trueTree <- function(x, filename = NULL, print.pv=TRUE, print.num=TRUE, flo
   if(print.pv)
     text(x, col=col.pv, cex=cex.pv, font=font.pv, float=float, print.num=print.num, showBP = showBP)
 
-  if(!is.null(filename)) #if writing to a file close the connection
+  if(!is.null(outputFilename)) #if writing to a file close the connection
   {
 	dev.off()
   }
